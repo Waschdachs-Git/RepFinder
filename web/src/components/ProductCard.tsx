@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 export default function ProductCard({ product }: { product: Product }) {
   const [fav, setFav] = useState(false);
   // Dynamische Ratio: startet bei 4/3 und passt sich dem geladenen Bild an
-  const [ratio, setRatio] = useState<number>(4 / 3);
+  const [ratio] = useState<number>(4 / 3);
   // Slideshow Index für mehrere Alt-Bilder
   const [altIdx, setAltIdx] = useState(0);
 
@@ -45,7 +45,7 @@ export default function ProductCard({ product }: { product: Product }) {
   // Hover-Slideshow: bei mehreren Alt-Bildern zyklisch wechseln
   useEffect(() => {
     if (altList.length < 2) return; // nur Slideshow wenn 2+ Bilder
-    let t: any;
+  let t: ReturnType<typeof setInterval> | undefined;
     const node = document?.getElementById(`pc-${pid}`);
     if (!node) return;
     const enter = () => {
@@ -67,7 +67,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
   <div id={`pc-${pid}`} className="group rounded-2xl border border-neutral-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all overflow-hidden">
       <div className="relative">
-        <Link href={`/p/${pid}`} onClick={(e) => {
+        <Link href={`/p/${pid}`} onClick={() => {
           // Klickzählung bleibt, aber wenn Bild noch gesperrt ist, verhindern wir versehentliche Navigation
           try { addClick(pid); fetch('/api/clicks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid }) }).catch(() => {}); } catch {}
           // keine harte Navigation-Blockade; ConsentImage öffnet Modal separat

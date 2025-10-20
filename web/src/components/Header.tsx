@@ -21,7 +21,7 @@ export default function Header() {
     if (typeof document === 'undefined') return 'light';
     try { return (localStorage.getItem('pf:theme') as 'light'|'dark') || 'light'; } catch { return 'light'; }
   });
-  const hoverTimer = useRef<any>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
   const router = useRouter();
 

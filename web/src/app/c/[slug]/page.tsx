@@ -78,7 +78,7 @@ export default function CategoryPage() {
         setTotal(0);
       })
       .finally(() => setLoading(false));
-  }, [agent, slug, sort, query, page, favOnly, priceMin, priceMax, favTick, subParamLower]);
+  }, [agent, slug, sort, query, page, favOnly, priceMin, priceMax, favTick, subParamLower, subParam]);
 
   if (!intro) return <div className="py-10">Category not found.</div>;
 

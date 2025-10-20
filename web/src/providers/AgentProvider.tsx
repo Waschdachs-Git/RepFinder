@@ -34,7 +34,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
     try {
       if (ready) window.dispatchEvent(new CustomEvent('pf:agent-changed', { detail: { to: agent } }));
     } catch {}
-  }, [agent]);
+  }, [agent, ready]);
 
   const value = useMemo(() => ({ agent, setAgent }), [agent]);
 

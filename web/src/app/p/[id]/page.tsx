@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { addClick, formatProductPrice, isFavorite, toggleFavorite, DETAIL_LEGAL_NOTE, AFFILIATE_DISCLAIMER, getDisplayTitle } from '@/lib/utils';
 import { useEffect, useState } from 'react';
@@ -51,9 +52,15 @@ export default function ProductDetailPage() {
     <div className="py-8">
   <Link href="/" className="text-sm text-neutral-600 hover:text-neutral-900">← Back</Link>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4 items-start">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="w-full rounded-3xl shadow-sm overflow-hidden" style={{ aspectRatio: '4 / 3', background: '#f6f6f6' }}>
-          <img src={product.image} alt={product.name} className="w-full h-full object-contain" />
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            style={{ objectFit: 'contain' }}
+            priority
+          />
         </div>
 
         <div>

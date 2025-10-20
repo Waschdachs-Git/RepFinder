@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+// no request object needed
 import { readSheet } from '@/lib/sheets';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,7 +33,7 @@ type HealthErr = {
   };
 };
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const csvUrl = !!(process.env.GOOGLE_SHEETS_CSV_URL || '').trim();
   const hasPrivateKeyPlain = !!(process.env.GOOGLE_PRIVATE_KEY || '').trim();
   const hasPrivateKeyBase64 = !!(process.env.GOOGLE_PRIVATE_KEY_BASE64 || '').trim();
@@ -92,12 +92,16 @@ export async function GET(_req: NextRequest) {
       },
     };
     return Response.json(ok, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message =
+      typeof e === 'object' && e && 'message' in e
+        ? String((e as { message?: unknown }).message || '')
+        : 'Unknown error while contacting Google Sheets';
     const res: HealthErr = {
       status: 'error',
       env,
       error: {
-        message: e?.message || 'Unknown error while contacting Google Sheets',
+        message,
       },
     };
     return Response.json(res, { status: 200 });

@@ -126,7 +126,7 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
   // Allow overriding tab and/or range via env to support existing sheets
   const baseRange = (process.env.GOOGLE_SHEETS_RANGE || 'A1:ZZ100000').trim();
   const tab = (process.env.GOOGLE_SHEETS_TAB || '').trim();
-  let tabsEnv = (process.env.GOOGLE_SHEETS_TABS || '')
+  const tabsEnv = (process.env.GOOGLE_SHEETS_TABS || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -214,13 +214,6 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
   const iImage2 = findIdx('image2','image-2','image alt','image2 url','image url 2','bild2');
   const iId = findIdx('id','sku','uid');
 
-  const findIdxRegex = (...patterns: RegExp[]) => {
-    for (let idx = 0; idx < header.length; idx++) {
-      const h = header[idx];
-      if (patterns.some((re) => re.test(h))) return idx;
-    }
-    return -1;
-  };
   // Multi-Agent-Erkennung nur dann aktivieren, wenn es wirklich agent-spezifische Spalten gibt
   const hasAgentSpecificPriceCol = header.some((h) => /(price).*(cnfans|itaobuy|superbuy|mulebuy|allchinabuy)|(cnfans|itaobuy|superbuy|mulebuy|allchinabuy).*(price)/i.test(h));
   const hasAgentSpecificAffCol = header.some((h) => /(affiliate|url|link).*(cnfans|itaobuy|superbuy|mulebuy|allchinabuy)|(cnfans|itaobuy|superbuy|mulebuy|allchinabuy).*(affiliate|url|link)/i.test(h));
@@ -342,9 +335,9 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
           const extra = affiliateUrl ? '-' + shortHash(affiliateUrl).slice(0, 6) : '';
           id = `${agent}-${slug}${extra}`;
         }
-        const prod: any = { id, name: String(name), agent, category, subcategory, price, image, imageAlt, description, affiliateUrl };
-        if (isUSD) prod.currency = 'USD';
-        out.push(prod);
+  const prod: SheetProduct = { id, name: String(name), agent, category, subcategory, price, image, imageAlt, description, affiliateUrl };
+  if (isUSD) prod.currency = 'USD';
+  out.push(prod);
       }
       continue;
     }
@@ -366,7 +359,7 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
       const extra = affiliateUrl ? '-' + shortHash(affiliateUrl).slice(0, 6) : '';
       id = `${agent}-${slug}${extra}`;
     }
-  const base = { id, name: String(name), agent, category, subcategory, price, image, imageAlt, description, affiliateUrl } as any;
+  const base: SheetProduct = { id, name: String(name), agent, category, subcategory, price, image, imageAlt, description, affiliateUrl };
     if (isUSD) base.currency = 'USD';
     out.push(base);
   }

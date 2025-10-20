@@ -1,21 +1,18 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  // Ensure Next traces from the monorepo root where the primary lockfile resides
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Trace from workspace root to avoid multi-lockfile warnings
   outputFileTracingRoot: process.cwd(),
+  // Keep image domains/patterns in JS config so Next picks them up even if TS config exists
   images: {
-    // For strict patterns
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'picsum.photos' },
-      // Common agent/CDN hosts
       { protocol: 'https', hostname: 'si.geilicdn.com' },
       { protocol: 'https', hostname: 'img.alicdn.com' },
       { protocol: 'https', hostname: 'ae01.alicdn.com' },
       { protocol: 'https', hostname: 'ae04.alicdn.com' },
       { protocol: 'https', hostname: 'gdp.alicdn.com' },
     ],
-    // For broader compatibility across Next versions
     domains: [
       'images.unsplash.com',
       'picsum.photos',
@@ -28,4 +25,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

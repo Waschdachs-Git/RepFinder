@@ -2,7 +2,7 @@
 import { useAgent } from '@/providers/AgentProvider';
 import { SHOPS } from '@/lib/data';
 
-export default function Hero({ onSearchSubmit }: { onSearchSubmit: (q: string) => void }) {
+export default function Hero() {
   const { agent } = useAgent();
   const shop = SHOPS[agent];
   return (

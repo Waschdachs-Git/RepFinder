@@ -37,7 +37,7 @@ function normalizeProducts(items: Product[]): Product[] {
       jewelry: 'jewelry',
       electronics: 'other-stuff',
       'other-stuff': 'other-stuff', 'other_stuff': 'other-stuff', 'other stuff': 'other-stuff',
-    } as any;
+    } as Record<string, Product['category']>;
     return (m[v] || 'other-stuff') as Product['category'];
   };
 
@@ -45,7 +45,7 @@ function normalizeProducts(items: Product[]): Product[] {
     .filter((p) => p && typeof p.name === 'string' && p.name.trim().length > 0)
     .map((p) => {
       const agent = (VALID_AGENTS.includes(p.agent as AgentKey) ? (p.agent as AgentKey) : 'cnfans') as Product['agent'];
-      const category = mapCategory((p as any).category || 'other-stuff');
+  const category = mapCategory((p as Product).category || 'other-stuff');
       const subcategory = (p.subcategory && p.subcategory.trim().length > 0) ? p.subcategory : 'General';
       let id = p.id || '';
       if (!id) {
@@ -113,7 +113,7 @@ function mapRowsToProducts(rows: string[][]): Product[] {
     const agentList = ['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'] as AgentKey[];
     const agent: AgentKey = (agentList).includes(agentRaw as AgentKey) ? (agentRaw as AgentKey) : 'cnfans';
     const price = Number(String(row[iPrice] || '').replace(',', '.')) || 0;
-    const category = (String(row[iCategory] || 'other-stuff') || 'other-stuff') as any;
+  const category = (String(row[iCategory] || 'other-stuff') || 'other-stuff') as Product['category'];
     const splitUrls = (raw: string): string[] => {
       const s = (raw || '').trim();
       if (!s) return [];
@@ -127,7 +127,7 @@ function mapRowsToProducts(rows: string[][]): Product[] {
       id: String(row[iId] || ''),
       name,
       agent,
-      category: category as any,
+  category: category as Product['category'],
       subcategory: (() => { const v = String(iSubcategory >= 0 ? (row[iSubcategory] || '') : ''); return v || 'General'; })(),
       price,
       imageAlt: (() => {
@@ -179,12 +179,12 @@ export async function loadAllProducts(): Promise<{ mode: SourceMode; items: Prod
     try {
       const res = await loadFromCsv();
       if (res.items && res.items.length > 0) return res;
-    } catch (e) { /* fall through */ }
+    } catch { /* fall through */ }
   }
   try {
     const res = await loadFromSheets();
     if (res.items && res.items.length > 0) return res;
-  } catch (e) { /* fall through */ }
+  } catch { /* fall through */ }
   const local = loadFromLocalJson();
   if (local.items && local.items.length > 0) return local;
   return { mode: 'builtin', items: PRODUCTS };

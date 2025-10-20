@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAgent } from "@/providers/AgentProvider";
-import type { Product } from "@/lib/types";
 import Hero from "@/components/Hero";
 import SearchBar from "@/components/SearchBar";
 import HowItWorks from "@/components/HowItWorks";
@@ -9,7 +8,7 @@ import FAQ from "@/components/FAQ";
 import ShippingCoupons from "@/components/ShippingCoupons";
 
 export default function Home() {
-  const { agent } = useAgent();
+  useAgent();
   const [q, setQ] = useState("");
   const [showTopNote, setShowTopNote] = useState(true);
 
@@ -32,7 +31,7 @@ export default function Home() {
           </button>
         </div>
       )}
-      <Hero onSearchSubmit={(term) => setQ(term)} />
+  <Hero />
       <div className="mb-8">
         <SearchBar query={q} setQuery={setQ} onSubmit={(term) => setQ(term)} />
       </div>
