@@ -1,3 +1,5 @@
+export const dynamic = 'force-static';
+export const revalidate = 60;
 import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {

@@ -5,10 +5,7 @@ export default function DatenschutzPage() {
     <LegalLayout title="Datenschutzerklärung">
       <p><strong>Verantwortlich im Sinne der Datenschutzgesetze:</strong></p>
       <p>
-        Natanael Haase<br />
-        Großolbersdorfer Str. 42g<br />
-        09430 Drebach<br />
-        Deutschland<br />
+        
   E-Mail: contact@repfinder.io
       </p>
 

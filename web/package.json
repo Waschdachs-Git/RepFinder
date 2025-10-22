@@ -7,9 +7,14 @@
     "build": "next build",
     "start": "node server.js",
     "start:next": "next start",
+  "build:export": "STATIC_EXPORT=true NEXT_PUBLIC_STATIC_EXPORT=true next build",
+  "export": "npm run build:export",
+    "preview:static": "npx serve -s out -l 3000",
     "lint": "eslint",
     "gen:data": "tsx scripts/generate-products.ts 3000",
-    "import:csv": "tsx scripts/import-from-csv.ts"
+    "import:csv": "tsx scripts/import-from-csv.ts",
+    "export:csv": "if [ -z \"$GOOGLE_SHEETS_CSV_URL\" ]; then echo 'Please set GOOGLE_SHEETS_CSV_URL'; exit 1; fi; npm run import:csv -- \"$GOOGLE_SHEETS_CSV_URL\" && npm run export",
+    "export:file": "npm run import:csv -- ./public/data/products.template.csv && npm run export"
   },
   "dependencies": {
     "googleapis": "^161.0.0",

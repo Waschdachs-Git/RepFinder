@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAgent } from '@/providers/AgentProvider';
+import { IS_STATIC, API_BASE, USE_API } from '@/lib/utils';
 
 export default function SearchBar({
   query,
@@ -20,16 +21,35 @@ export default function SearchBar({
   const [suggests, setSuggests] = useState<{ id: string; name: string }[]>([]);
   const [highlight, setHighlight] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
+  type BasicItem = { id: string; name: string };
+  const allForSuggestRef = useRef<BasicItem[] | null>(null);
 
   useEffect(() => {
     const q = query.trim();
     if (!q) { setSuggests([]); setOpen(false); return; }
-    const t = setTimeout(() => {
-      const p = new URLSearchParams({ q, agent });
-      fetch(`/api/suggest?${p}`)
-        .then(r => r.json())
-        .then(d => { setSuggests(d.items || []); setOpen((d.items || []).length > 0); setHighlight(0); })
-        .catch(() => { setSuggests([]); setOpen(false); });
+    const t = setTimeout(async () => {
+  if (!USE_API && IS_STATIC) {
+        // Lazy-load once
+        if (!allForSuggestRef.current) {
+          try {
+            const arr = await fetch('/data/products.generated.json').then(r => r.json() as Promise<Array<{ id?: string; name?: string }>>);
+            allForSuggestRef.current = (Array.isArray(arr) ? arr : []).map((p) => ({ id: String(p.id || ''), name: String(p.name || '') }));
+          } catch { allForSuggestRef.current = []; }
+        }
+        const pool = (allForSuggestRef.current || []).filter(x => x.id && x.name);
+        const ql = q.toLowerCase();
+        const matched = pool.filter(p => p.name.toLowerCase().includes(ql)).slice(0, 8);
+        setSuggests(matched);
+        setOpen(matched.length > 0);
+        setHighlight(0);
+      } else {
+        const p = new URLSearchParams({ q, agent });
+        const base = API_BASE; // empty string = same origin
+        fetch(`${base}/api/suggest?${p}`)
+          .then(r => r.json())
+          .then(d => { setSuggests(d.items || []); setOpen((d.items || []).length > 0); setHighlight(0); })
+          .catch(() => { setSuggests([]); setOpen(false); });
+      }
     }, 150);
     return () => clearTimeout(t);
   }, [query, agent]);

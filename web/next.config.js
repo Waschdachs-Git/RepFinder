@@ -1,9 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable static export only when explicitly requested
+  output: process.env.STATIC_EXPORT === 'true' ? 'export' : undefined,
   // Trace from workspace root to avoid multi-lockfile warnings
   outputFileTracingRoot: process.cwd(),
-  // Keep image domains/patterns in JS config so Next picks them up even if TS config exists
+  // Images: when exporting statically, disable optimization server
   images: {
+    unoptimized: process.env.STATIC_EXPORT === 'true',
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'picsum.photos' },

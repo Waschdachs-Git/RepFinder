@@ -1,5 +1,12 @@
 import { Product } from './types';
 
+// Build-time static export flag exposed to client
+export const IS_STATIC = process.env.NEXT_PUBLIC_STATIC_EXPORT === 'true';
+// Optional external/base API (e.g., PHP endpoints on Hostinger)
+export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '');
+// Prefer calling API endpoints (same-origin if API_BASE is empty). Default true.
+export const USE_API = (process.env.NEXT_PUBLIC_USE_API ?? 'true') !== 'false';
+
 export const formatPrice = (value: number, currency: 'EUR' | 'USD' = 'USD') =>
   new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'en-GB', { style: 'currency', currency }).format(value);
 

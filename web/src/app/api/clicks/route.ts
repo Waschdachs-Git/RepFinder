@@ -1,4 +1,6 @@
-import { NextRequest } from 'next/server';
+export const dynamic = 'force-static';
+export const revalidate = 60;
+import type { NextRequest } from 'next/server';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -16,6 +18,9 @@ function writeClicks(map: Record<string, number>) {
 }
 
 export async function POST(req: NextRequest) {
+  if (process.env.STATIC_EXPORT === 'true') {
+    return Response.json({ ok: false, reason: 'disabled-in-static-export' }, { status: 200 });
+  }
   const body = await req.json().catch(() => ({}));
   const id = String(body.id || '');
   if (!id) return new Response('Bad Request', { status: 400 });
@@ -26,5 +31,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  if (process.env.STATIC_EXPORT === 'true') {
+    return Response.json({ clicks: {} });
+  }
   return Response.json({ clicks: readClicks() });
 }

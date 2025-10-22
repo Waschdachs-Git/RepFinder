@@ -1,3 +1,5 @@
+export const dynamic = 'force-static';
+export const revalidate = 60;
 import { NextRequest } from 'next/server';
 import { PRODUCTS } from '@/lib/data';
 import { AgentKey, CategorySlug, SortKey } from '@/lib/types';
@@ -14,6 +16,12 @@ async function loadAll(): Promise<{ items: ProductDTO[]; mode: string }> {
 }
 
 export async function GET(req: NextRequest) {
+  if (process.env.STATIC_EXPORT === 'true') {
+    // During static export, API routes are not meant to be called; return empty shape
+    return new Response(JSON.stringify({ items: [], total: 0, page: 1, pageSize: 24 }), {
+      headers: { 'content-type': 'application/json' },
+    });
+  }
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id') || '';
   const agent = (searchParams.get('agent') || '') as AgentKey | '';
