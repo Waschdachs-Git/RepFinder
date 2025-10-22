@@ -1,0 +1,7 @@
+RewriteEngine On
+Options -MultiViews
+
+# Map extensionless endpoints to PHP files
+RewriteRule ^products$ products.php [L,QSA]
+RewriteRule ^suggest$ suggest.php [L,QSA]
+RewriteRule ^clicks$ clicks.php [L,QSA]
