@@ -1,5 +1,4 @@
-export const dynamic = 'force-static';
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 // no request object needed
 import { readSheet } from '@/lib/sheets';
 import fs from 'node:fs';

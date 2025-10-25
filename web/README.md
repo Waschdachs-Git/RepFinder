@@ -3,6 +3,10 @@ Product Finder
 
 Minimalistische Next.js-App (App Router, Tailwind v4) mit dynamischen Agent-Themes, Kategorien, Startseite mit Top-Produkten, Produkt-Detail, Suche/Filter und Favoriten.
 
+Hinweis zum Deployment (VPS/Node.js)
+------------------------------------
+Dieses Projekt ist für den Betrieb als Node.js-App konfiguriert. Ein kleiner Custom-Server (`server.js`) startet Next.js im Produktionsmodus. Siehe `DEPLOY-VPS.md` für die Einrichtung (Ports, PM2, Umgebungsvariablen).
+
 Start
 -----
 
@@ -94,7 +98,7 @@ Datenquellen-Optionen für Produkte (du kannst dein bestehendes Google Sheet wei
 	  - Lokal: `npm run import:csv ./public/data/products.template.csv`
 	  - Aus Google Sheets: `npm run import:csv "https://docs.google.com/spreadsheets/d/<ID>/export?format=csv&gid=<GID>"`
   4) Ergebnis liegt in `public/data/products.generated.json` und wird automatisch von `/api/products` verwendet.
-  5) Falls deine Bilder aus neuen Domains kommen, trage die Domain in `next.config.ts > images.remotePatterns` ein.
+    5) Falls deine Bilder aus neuen Domains kommen, trage die Domain in `next.config.js > images.remotePatterns` ein.
 
 ### Health-Check für Google Sheets
 

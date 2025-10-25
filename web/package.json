@@ -7,16 +7,11 @@
     "build": "next build",
     "start": "node server.js",
     "start:next": "next start",
-  "build:export": "STATIC_EXPORT=true NEXT_PUBLIC_STATIC_EXPORT=true next build",
-  "export": "npm run build:export",
-    "preview:static": "npx serve -s out -l 3000",
-  "preview:php": "rm -rf out/api && cp -a php-api out/api && php -S 127.0.0.1:3000 -t out php-api/router.php",
-  "preview:php:csv": "rm -rf out/api && cp -a php-api out/api && mkdir -p out/.cache && GOOGLE_SHEETS_CSV_URL=\"$GOOGLE_SHEETS_CSV_URL\" php -S 127.0.0.1:3000 -t out php-api/router.php",
     "lint": "eslint",
     "gen:data": "tsx scripts/generate-products.ts 3000",
     "import:csv": "tsx scripts/import-from-csv.ts",
-    "export:csv": "if [ -z \"$GOOGLE_SHEETS_CSV_URL\" ]; then echo 'Please set GOOGLE_SHEETS_CSV_URL'; exit 1; fi; npm run import:csv -- \"$GOOGLE_SHEETS_CSV_URL\" && npm run export",
-    "export:file": "npm run import:csv -- ./public/data/products.template.csv && npm run export"
+    "export:csv": "if [ -z \"$GOOGLE_SHEETS_CSV_URL\" ]; then echo 'Please set GOOGLE_SHEETS_CSV_URL'; exit 1; fi; npm run import:csv -- \"$GOOGLE_SHEETS_CSV_URL\"",
+    "export:file": "npm run import:csv -- ./public/data/products.template.csv"
   },
   "dependencies": {
     "googleapis": "^161.0.0",
