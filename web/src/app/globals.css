@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root { --background: #ffffff; --foreground: #111111; }
+:root[data-theme='dark'] { --background: #0b0b0b; --foreground: #eaeaea; }
+/* CSS-Variablen für dynamische Akzentfarben pro Agent */
+:root { --accent: 239 84% 59%; --accent-foreground: 0 0% 100%; }
+html[data-agent='itaobuy'] { --accent: 19 100% 60%; --accent-foreground: 0 0% 100%; }
+html[data-agent='cnfans'] { --accent: 355 79% 41%; --accent-foreground: 0 0% 100%; }
+html[data-agent='superbuy'] { --accent: 220 72% 55%; --accent-foreground: 0 0% 100%; }
+html[data-agent='mulebuy'] { --accent: 268 62% 52%; --accent-foreground: 0 0% 100%; }
+html[data-agent='allchinabuy'] { --accent: 188 70% 45%; --accent-foreground: 0 0% 100%; }
+
+/* Tailwind theme handled via utilities; mapping block removed for compatibility with some linters. */
+
+/* Keine Dark-Mode-Umschaltung – gewünschter Look: hell/weiß. */
+
+body { background: var(--background); color: var(--foreground); }
+
+/* Light/Dark helpers for common surfaces */
+.card { background: var(--background); color: var(--foreground); }
+.muted { color: color-mix(in oklab, var(--foreground) 60%, transparent); }
+
+/* Dark mode fine-tuning */
+html[data-theme='dark'] .backdrop-blur.bg-white\/70 { background-color: rgba(18,18,18,0.7) !important; }
+html[data-theme='dark'] .bg-white { background-color: #121212 !important; }
+html[data-theme='dark'] .bg-neutral-50 { background-color: #141414 !important; }
+html[data-theme='dark'] .border-neutral-100, html[data-theme='dark'] .border-neutral-200 { border-color: #2a2a2a !important; }
+html[data-theme='dark'] .text-neutral-900 { color: #fafafa !important; }
+html[data-theme='dark'] .text-neutral-800 { color: #ededed !important; }
+html[data-theme='dark'] .text-neutral-700 { color: #d8d8d8 !important; }
+html[data-theme='dark'] .text-neutral-600 { color: #c8c8c8 !important; }
+html[data-theme='dark'] .text-neutral-500 { color: #b3b3b3 !important; }
+html[data-theme='dark'] .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.45) !important; }
+html[data-theme='dark'] .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important; }
+
+/* Buttons in dark mode */
+html[data-theme='dark'] .border { border-color: #2a2a2a !important; }
+html[data-theme='dark'] .hover\:bg-neutral-50:hover { background-color: #1a1a1a !important; }
+
+/* Dark mode fine-tuning for common Tailwind utilities */
+html[data-theme='dark'] .bg-white { background-color: #121212 !important; }
+html[data-theme='dark'] .bg-white\/70 { background-color: rgba(18,18,18,0.7) !important; }
+html[data-theme='dark'] .bg-neutral-50 { background-color: #141414 !important; }
+html[data-theme='dark'] .border-neutral-100 { border-color: #2a2a2a !important; }
+html[data-theme='dark'] .border-neutral-200 { border-color: #2a2a2a !important; }
+html[data-theme='dark'] .text-neutral-900 { color: #fafafa !important; }
+html[data-theme='dark'] .text-neutral-800 { color: #ededed !important; }
+html[data-theme='dark'] .text-neutral-700 { color: #d8d8d8 !important; }
+html[data-theme='dark'] .text-neutral-600 { color: #c8c8c8 !important; }
+html[data-theme='dark'] .text-neutral-500 { color: #b3b3b3 !important; }
+html[data-theme='dark'] .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.5) !important; }
+html[data-theme='dark'] .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.55) !important; }
