@@ -18,7 +18,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://repfinder.io';
       const title = getDisplayTitle(p as Product);
       const image = (p.image || '').startsWith('http') ? p.image : `${base}${p.image || '/og-image.png'}`;
-      const offer: Record<string, any> = {
+      type OfferLd = {
+        '@type': 'Offer';
+        url: string;
+        price?: string;
+        priceCurrency?: string;
+      };
+      const offer: OfferLd = {
         '@type': 'Offer',
         url: p.affiliateUrl || `${base}/p/${id}`,
       };
@@ -34,15 +40,24 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         offers: offer,
       };
       jsonLd = JSON.stringify(prodLd);
-      const crumb = {
+      type CrumbItem = { '@type': 'ListItem'; position: number; name: string; item: string };
+      type BreadcrumbLd = {
+        '@context': 'https://schema.org';
+        '@type': 'BreadcrumbList';
+        itemListElement: CrumbItem[];
+      };
+      const itemListElement: CrumbItem[] = [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
+      ];
+      if (p.category) {
+        itemListElement.push({ '@type': 'ListItem', position: 2, name: String(p.category), item: `${base}/c/${p.category}` });
+      }
+      itemListElement.push({ '@type': 'ListItem', position: 3, name: title, item: `${base}/p/${id}` });
+      const crumb: BreadcrumbLd = {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
-          p.category ? { '@type': 'ListItem', position: 2, name: String(p.category), item: `${base}/c/${p.category}` } : undefined,
-          { '@type': 'ListItem', position: 3, name: title, item: `${base}/p/${id}` },
-        ].filter(Boolean),
-      } as any;
+        itemListElement,
+      };
       breadcrumbLd = JSON.stringify(crumb);
     }
   } catch {}

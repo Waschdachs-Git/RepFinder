@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Fragment } from 'react';
 
 const links = [
   { href: '/imprint', label: 'Imprint' },
@@ -17,12 +18,12 @@ export default function Footer() {
         <div className="flex flex-col items-center gap-3">
           <nav aria-label="Footer navigation" className="flex flex-wrap items-center justify-center gap-3">
             {links.map((l, i) => (
-              <>
-                <Link key={l.href} className="rounded px-2 py-1 hover:text-neutral-900 hover:underline underline-offset-4" href={l.href}>
+              <Fragment key={l.href}>
+                <Link className="rounded px-2 py-1 hover:text-neutral-900 hover:underline underline-offset-4" href={l.href}>
                   {l.label}
                 </Link>
                 {i < links.length - 1 && <span className="sep text-neutral-300">•</span>}
-              </>
+              </Fragment>
             ))}
           </nav>
           <p className="text-xs text-neutral-500">© {year} RepFinder</p>

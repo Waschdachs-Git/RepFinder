@@ -7,10 +7,12 @@ const RATE_LIMIT_MAX = 5;
 const bucket = new Map<string, { count: number; resetAt: number }>();
 
 function getIp(req: NextRequest): string {
-  // Try common headers first (only if trusted proxy/CDN in front). Fallback to req.ip
+  // Try common headers first (only if trusted proxy/CDN in front). Avoid using `any`-typed fallbacks.
   const hdr = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '';
-  const first = hdr.split(',')[0].trim();
-  return first || (req as any).ip || 'unknown';
+  const first = hdr.split(',')[0]?.trim();
+  // Some runtimes expose `req.ip`, but it's not in the public type. Use a typed-narrowing fallback without `any`.
+  const maybeIp = (req as unknown as { ip?: string }).ip;
+  return first || maybeIp || 'unknown';
 }
 
 function isRateLimited(ip: string): boolean {
@@ -29,20 +31,26 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
+type ContactPayload = {
+  email?: unknown;
+  message?: unknown;
+};
+
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
   if (isRateLimited(ip)) {
     return NextResponse.json({ ok: false, error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
-  let payload: any;
+  let payload: unknown;
   try {
     payload = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 });
   }
-  const email = String(payload?.email || '').trim();
-  const message = String(payload?.message || '').trim();
+  const { email: rawEmail, message: rawMessage } = (payload as ContactPayload) || {};
+  const email = typeof rawEmail === 'string' ? rawEmail.trim() : '';
+  const message = typeof rawMessage === 'string' ? rawMessage.trim() : '';
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (!emailOk || message.length < 5) {

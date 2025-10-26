@@ -12,15 +12,6 @@ const nextConfig = {
       { protocol: 'https', hostname: 'ae04.alicdn.com' },
       { protocol: 'https', hostname: 'gdp.alicdn.com' },
     ],
-    domains: [
-      'images.unsplash.com',
-      'picsum.photos',
-      'si.geilicdn.com',
-      'img.alicdn.com',
-      'ae01.alicdn.com',
-      'ae04.alicdn.com',
-      'gdp.alicdn.com',
-    ],
   },
 };
 
