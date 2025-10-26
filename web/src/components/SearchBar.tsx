@@ -67,7 +67,7 @@ export default function SearchBar({
     <div ref={boxRef} className="relative w-full max-w-2xl mx-auto">
       <form
         onSubmit={(e) => { e.preventDefault(); onSubmit(query.trim()); setOpen(false); }}
-        className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 shadow-sm focus-within:ring-2 focus-within:ring-[hsl(var(--accent))/30]"
+        className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 shadow-sm focus-within:ring-2 focus-within:ring-[hsl(var(--accent))/30] u-focus-glow"
       >
         <input
           value={query}
@@ -96,12 +96,12 @@ export default function SearchBar({
   <button type="submit" className="rounded-full px-4 py-2 text-sm bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] hover:brightness-105">Search</button>
       </form>
       {open && suggests.length > 0 && (
-        <div className="absolute left-0 right-0 mt-2 rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden z-10">
+        <div className="absolute left-0 right-0 mt-2 rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden z-10 anim-fade-up">
           {suggests.map((s, i) => (
             <button
               key={s.id}
               type="button"
-              className={`w-full text-left px-4 py-2 text-sm ${i === highlight ? 'bg-neutral-50' : ''}`}
+              className={`w-full text-left px-4 py-2 text-sm transition-colors transition-transform ${i === highlight ? 'bg-neutral-50' : ''} hover:translate-x-0.5`}
               onMouseEnter={() => setHighlight(i)}
               onClick={() => { setQuery(s.name); setOpen(false); router.push(`/p/${s.id}`); }}
             >

@@ -365,3 +365,72 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
   }
   return out;
 }
+
+// Append a single contact row to a dedicated Google Sheet tab.
+// Uses the same service-account credentials discovery as readSheet.
+// Returns true if successfully appended, false if writing is not configured or disabled.
+export async function appendContactRow(row: { email: string; message: string; ip?: string }): Promise<boolean> {
+  // If running in CSV mode, we have no write access – bail out gracefully.
+  if ((process.env.GOOGLE_SHEETS_CSV_URL || '').trim()) return false;
+
+  const normalizeStr = (v: string | undefined | null): string => {
+    let s = String(v ?? '').trim();
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
+    return s.trim();
+  };
+  const spreadsheetId = normalizeStr(process.env.CONTACT_SHEETS_ID || process.env.GOOGLE_SHEETS_ID);
+  const clientEmail = normalizeStr(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL);
+
+  const normalizePem = (pem: string): string => {
+    let p = (pem || '').trim();
+    if ((p.startsWith('"') && p.endsWith('"')) || (p.startsWith("'") && p.endsWith("'"))) p = p.slice(1, -1);
+    p = p.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\\n/g, '\n');
+    return p;
+  };
+  const decodeBase64 = (b64: string): string => Buffer.from(b64, 'base64').toString('utf8');
+  const getPrivateKey = (): string | null => {
+    const envB64 = (process.env.GOOGLE_PRIVATE_KEY_BASE64 || '').trim();
+    if (envB64) {
+      try { return normalizePem(decodeBase64(envB64)); } catch {}
+    }
+    const envPlain = (process.env.GOOGLE_PRIVATE_KEY || '').trim();
+    if (envPlain) return normalizePem(envPlain);
+    const candidates = [path.join(process.cwd(), 'key.b64'), path.join(process.cwd(), 'web', 'key.b64')];
+    for (const p of candidates) {
+      try {
+        if (fs.existsSync(p)) {
+          const content = fs.readFileSync(p, 'utf8').trim();
+          if (content) return normalizePem(decodeBase64(content));
+        }
+      } catch {}
+    }
+    return null;
+  };
+
+  const privateKey = getPrivateKey();
+  if (!spreadsheetId || !clientEmail || !privateKey) return false;
+
+  const auth = new google.auth.JWT({
+    email: clientEmail,
+    key: privateKey,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const tab = normalizeStr(process.env.CONTACT_SHEETS_TAB) || 'Contact';
+  const range = `${tab}!A:D`;
+  const nowIso = new Date().toISOString();
+  const values = [[nowIso, row.email, row.message, row.ip || '']];
+  try {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range,
+      valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values },
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}

@@ -9,8 +9,8 @@ export default function ShippingCoupons() {
   const shop = SHOPS[agent];
   const offer = OFFERS[agent];
   return (
-    <section className="my-8">
-      <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm flex items-center justify-between gap-4">
+    <section className="my-10">
+  <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm flex items-center justify-between gap-4 u-hover-lift anim-fade-up">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">Shipping coupons</h2>
           <p className="text-sm text-neutral-600 mt-1">{offer?.text || 'Grab welcome shipping coupons for better rates.'}</p>

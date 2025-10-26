@@ -1,8 +1,9 @@
-import { SHOPS } from '@/lib/data';
-import { OFFERS } from '@/lib/offers';
+import { SHOPS } from '../../lib/data';
+import { OFFERS } from '../../lib/offers';
+import type { Shop } from '../../lib/types';
 
 export default function CouponsPage() {
-  const items = Object.values(SHOPS).map((s) => ({
+  const items = (Object.values(SHOPS) as Shop[]).map((s) => ({
     key: s.key,
     name: s.name,
     accent: s.accentHsl,

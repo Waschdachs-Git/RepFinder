@@ -129,6 +129,9 @@ export default function Header() {
           >
             {theme === 'dark' ? '🌙' : '☀️'}
           </button>
+          <Link href="/contact" className="hidden md:inline-flex items-center justify-center rounded-full border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50">
+            Contact
+          </Link>
           <button className="hidden md:inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-medium transition-all bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] shadow-sm hover:shadow-md hover:brightness-105" onClick={() => setOpen(true)}>Switch agent</button>
           <button className="md:hidden inline-flex items-center justify-center rounded-full border border-neutral-200 px-3 py-2 text-sm" onClick={() => setMenuOpen(true)} aria-label="Open menu">☰</button>
         </div>
@@ -149,6 +152,10 @@ export default function Header() {
                       </Link>
                     ))}
                     <hr className="my-3" />
+                    <Link href="/contact" className="rounded-xl border border-neutral-200 px-4 py-2 text-neutral-700 hover:bg-neutral-50" onClick={() => setMenuOpen(false)}>
+                      Contact
+                    </Link>
+                    <div className="h-2" />
                     <button className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm border border-neutral-200 bg-white hover:bg-neutral-50" onClick={() => { setMenuOpen(false); setOpen(true); }}>Switch agent</button>
                   </nav>
                 </div>
