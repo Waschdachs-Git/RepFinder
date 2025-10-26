@@ -18,28 +18,41 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const BASE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://repfinder.site').trim();
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://repfinder.io'),
+  metadataBase: new URL(BASE),
   title: {
-    default: 'RepFinder – Rep sneaker & fashion finder (CNFans, iTaobuy, Superbuy)',
+    default: 'RepFinder – Find Your Perfect Reps Easily',
     template: '%s | RepFinder',
   },
-  description: 'Find replica sneaker and fashion links faster than spreadsheets. Compare CNFans, iTaobuy, Superbuy, MuleBuy and AllChinaBuy. EU‑friendly and agent coupons.',
-  authors: [{ name: 'RepFinder', url: 'https://repfinder.io' }],
+  description: 'RepFinder helps you discover the best reps from CNFans, Itaobuy, Superbuy, Mulebuy & AllChinaBuy. Clean, fast, and easy to use.',
+  authors: [{ name: 'RepFinder', url: BASE }],
   applicationName: 'RepFinder',
-  keywords: ['RepFinder', 'rep sneaker finder', 'rep fashion finder', 'cnfans spreadsheet', 'iTaobuy', 'CNFans', 'Superbuy', 'MuleBuy', 'AllChinaBuy', 'agent coupon', 'better than spreadsheets', 'product finder'],
+  keywords: [
+    'repfinder',
+    'cnfans',
+    'itaobuy',
+    'superbuy',
+    'mulebuy',
+    'allchinabuy',
+    'rep sneakers',
+    'rep fashion',
+    'agent links',
+  ],
   openGraph: {
     type: 'website',
-    url: 'https://repfinder.io',
+    url: BASE,
     siteName: 'RepFinder',
-    title: 'RepFinder – Rep sneaker & fashion finder (CNFans, iTaobuy, Superbuy)',
-    description: 'Find replica sneaker and fashion links faster than spreadsheets. Compare CNFans, iTaobuy, Superbuy, MuleBuy and AllChinaBuy. EU‑friendly and agent coupons.',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'RepFinder' }],
+    title: 'RepFinder',
+    description: 'Find the best reps and agents – RepFinder makes browsing CNFans, Itaobuy & more simple.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'RepFinder – Rep Sneaker Finder' }],
+    locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RepFinder – Rep sneaker & fashion finder (CNFans, iTaobuy, Superbuy)',
-    description: 'Find replica sneaker and fashion links faster than spreadsheets. Compare CNFans, iTaobuy, Superbuy, MuleBuy and AllChinaBuy. EU‑friendly and agent coupons.',
+    title: 'RepFinder – Find Your Perfect Reps Easily',
+    description: 'RepFinder helps you discover the best reps from CNFans, Itaobuy, Superbuy, Mulebuy & AllChinaBuy. Clean, fast, and easy to use.',
     images: ['/og-image.png'],
     creator: '@repfinder',
   },
@@ -88,8 +101,8 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'RepFinder',
-              url: 'https://repfinder.io',
-              logo: 'https://repfinder.io/icon.svg',
+              url: BASE,
+              logo: `${BASE}/icon.svg`,
               sameAs: [
                 'https://cnfans.com/',
                 'https://www.superbuy.com/',
@@ -105,10 +118,10 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
               name: 'RepFinder',
-              url: 'https://repfinder.io',
+              url: BASE,
               potentialAction: {
                 '@type': 'SearchAction',
-                target: 'https://repfinder.io/c/shoes?q={search_term_string}',
+                target: `${BASE}/c/shoes?q={search_term_string}`,
                 'query-input': 'required name=search_term_string'
               }
             }) }}
