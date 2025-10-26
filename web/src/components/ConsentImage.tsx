@@ -87,6 +87,23 @@ export default function ConsentImage({
     setConsented(consented);
   }, [storage, secret]);
 
+  // Reagiere global auf eine einmal erteilte Einwilligung: alle Instanzen
+  // aktualisieren sofort, ohne Reload.
+  useEffect(() => {
+    const onGlobal = () => {
+      const { consented } = readConsentFlags(secret);
+      setConsented(consented);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pf:image-consent-changed', onGlobal as EventListener);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('pf:image-consent-changed', onGlobal as EventListener);
+      }
+    };
+  }, [secret]);
+
   useEffect(() => { setMounted(true); }, []);
 
   // Globaler Schutz: Beim ersten Besuch werden keine Bilder angezeigt,
@@ -107,6 +124,9 @@ export default function ConsentImage({
     writeConsentFlags({ consent: true });
     setOpen(false);
     setConsented(true);
+    try {
+      window.dispatchEvent(new Event('pf:image-consent-changed'));
+    } catch {}
   };
 
   const list = Array.isArray(srcList) && srcList.length > 0 ? srcList.filter(Boolean) : [src];
@@ -116,9 +136,9 @@ export default function ConsentImage({
   const content = (
     <div className="relative" style={{ aspectRatio: ratio }}>
       {showPlaceholder ? (
-        <div className={"absolute inset-0 grid place-items-center bg-neutral-100 text-center p-4 rounded-xl border border-neutral-200 " + (className || '')}>
-          <div>
-            <div className="text-sm md:text-base text-neutral-800">
+        <div className={"absolute inset-0 grid place-items-center text-center p-4 pt-10 pr-12 rounded-xl border border-neutral-200 bg-white/95 dark:bg-neutral-900/90 " + (className || '')}>
+          <div className="max-w-md">
+            <div className="text-sm md:text-base text-neutral-800 dark:text-neutral-50">
               ⚠️ Legal notice: These images depict products inspired by well‑known brands. They are not original branded items. We are not affiliated with any brand. By continuing, you confirm you have read and understood these notices.
             </div>
             <button
