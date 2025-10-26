@@ -1,4 +1,11 @@
 /* Simple Next.js custom server for Hostinger Node.js app */
+// Load environment variables from .env and .env.local when running on a VPS without a panel
+try {
+  const path = require('path');
+  const dotenv = require('dotenv');
+  dotenv.config({ path: path.join(__dirname, '.env') });
+  dotenv.config({ path: path.join(__dirname, '.env.local') }); // overrides .env
+} catch {}
 const { createServer } = require('http');
 const next = require('next');
 

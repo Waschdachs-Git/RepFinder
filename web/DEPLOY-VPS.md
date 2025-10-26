@@ -24,6 +24,12 @@ Optional frontend flags (defaults are fine):
 - NEXT_PUBLIC_USE_API=true
 - NEXT_PUBLIC_API_BASE="" (empty = same-origin)
 
+Loading env files on a VPS:
+- This project loads `.env` and `.env.local` automatically via `dotenv` in `server.js`.
+- That means you can upload a `.env.local` next to `server.js` on your VPS (not committed) with e.g.:
+  - `GOOGLE_SHEETS_CSV_URL=...`
+- Alternatively set the variables in your process manager or hosting control panel.
+
 ## Build & run
 
 Local dev:
