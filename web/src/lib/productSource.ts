@@ -183,14 +183,8 @@ function loadFromLocalJson(): { mode: SourceMode; items: Product[] } {
 }
 
 export async function loadAllProducts(): Promise<{ mode: SourceMode; items: Product[] }> {
-  // Priority: CSV -> Sheets -> Local JSON -> Builtin
-  const csvUrl = (process.env.GOOGLE_SHEETS_CSV_URL || '').trim();
-  if (csvUrl) {
-    try {
-      const res = await loadFromCsv();
-      if (res.items && res.items.length > 0) return res;
-    } catch { /* fall through */ }
-  }
+  // Priority: Sheets reader (supports CSV URL and Service Account) -> Local JSON -> Builtin
+  // Reason: readProductsFromSheet handles multi-agent columns, tabs and aliases better than the simple CSV mapper.
   try {
     const res = await loadFromSheets();
     if (res.items && res.items.length > 0) return res;
