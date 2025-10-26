@@ -1,7 +1,6 @@
 "use client";
 
 import Link from 'next/link';
-import Image from 'next/image';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
@@ -55,15 +54,8 @@ export default function Header() {
     <header className={classNames('sticky top-0 z-50 backdrop-blur bg-white/70 border-b border-neutral-100 transition-all duration-300', scrolled && 'py-2')}>
       <div className="px-4 sm:px-6 lg:px-8 mx-auto flex items-center gap-4 py-3">{/* left */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="inline-flex items-center gap-2 font-semibold tracking-tight text-lg leading-tight">
-            {/* Optional Logo: lege eine Datei unter /public/logo.png ab (z. B. 128x128). */}
-            <span className="relative inline-block h-6 w-6">
-              <Image src="/logo.png" alt="RepFinder logo" fill sizes="24px" className="object-contain" priority onError={(e) => {
-                // Falls kein Logo vorhanden ist, das Bild verstecken und nur den Text zeigen
-                const target = e.currentTarget as unknown as HTMLImageElement; target.style.display = 'none';
-              }} />
-            </span>
-            <span className="whitespace-nowrap">RepFinder</span>
+          <Link href="/" className="font-semibold tracking-tight text-lg leading-tight">
+            RepFinder
             {pathname === '/' && (
               <span className="block text-[11px] font-normal text-neutral-500">Find the best reps. Fast.</span>
             )}

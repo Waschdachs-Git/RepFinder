@@ -58,10 +58,15 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      // Prefer custom PNG logo for the browser tab; browsers will downscale as needed
+      { url: '/logo.png', rel: 'icon', type: 'image/png', sizes: '32x32' },
+      // Fallbacks
       { url: '/icon.svg', rel: 'icon', type: 'image/svg+xml' },
       { url: '/favicon.ico', rel: 'shortcut icon' },
     ],
     apple: [
+      // iOS prefers 180x180, but will scale if needed
+      { url: '/logo.png', sizes: '180x180' },
       { url: '/icon.svg' },
     ],
   },
