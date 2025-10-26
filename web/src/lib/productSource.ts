@@ -90,19 +90,29 @@ function parseCsv(text: string): string[][] {
 
 function mapRowsToProducts(rows: string[][]): Product[] {
   if (!rows.length) return [];
-  const header = rows[0].map((h) => (h || '').toLowerCase());
-  const idx = (name: string) => header.indexOf(name);
-  const iId = idx('id');
-  const iName = idx('name');
-  const iAgent = idx('agent');
-  const iCategory = idx('category');
-  const iPrice = idx('price');
-  const iImage = idx('image');
-  const iDescription = idx('description');
-  const iAffiliate = idx('affiliateurl');
+  const headerRaw = rows[0].map((h) => String(h || ''));
+  const header = headerRaw.map((h) => h.trim().toLowerCase());
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const headerNorm = header.map(norm);
+  const findIdx = (...candidates: string[]) => {
+    const cands = candidates.map(norm);
+    for (let i = 0; i < headerNorm.length; i++) {
+      const h = headerNorm[i];
+      if (cands.includes(h)) return i;
+    }
+    return -1;
+  };
+  const iId = findIdx('id','sku','uid');
+  const iName = findIdx('name','title','produkt','product');
+  const iAgent = findIdx('agent','agents','agent(s)','shop','store');
+  const iCategory = findIdx('category','kategorie','cat');
+  const iPrice = findIdx('price','preis','cost','amount');
+  const iImage = findIdx('image','imageurl','image-url','img','bild','picture','photo','image1','image-1','image main');
+  const iDescription = findIdx('description','desc','beschreibung','details');
+  const iAffiliate = findIdx('affiliateurl','affiliate url','affiliate','url','link','href');
   // clicks are ignored (tracked server-side)
-  const iSubcategory = idx('subcategory');
-  const iImage2 = idx('image2');
+  const iSubcategory = findIdx('subcategory','sub category','sub-cat','unterkategorie');
+  const iImage2 = findIdx('image2','image-2','image alt','image2 url','image url 2','bild2');
 
   const out: Product[] = [];
   for (let r = 1; r < rows.length; r++) {
