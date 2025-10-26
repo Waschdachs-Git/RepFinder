@@ -7,7 +7,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://repfinder.io';
   // Static routes + categories
   const routes: string[] = [
-    '/', '/imprint', '/privacy', '/contact',
+    '/', '/imprint', '/privacy', '/contact', '/coupons',
     '/c/shoes', '/c/tops', '/c/bottoms', '/c/coats-and-jackets', '/c/full-body-clothing', '/c/headwear', '/c/accessories', '/c/jewelry', '/c/other-stuff'
   ];
   const now = new Date();
