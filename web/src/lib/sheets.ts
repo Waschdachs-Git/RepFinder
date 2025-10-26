@@ -316,7 +316,22 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
         const uniq = Array.from(new Set(parts));
         return (['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'] as AgentKey[]).filter(a => uniq.includes(a));
       };
-      const agents = parseAgents(agentsCell);
+      let agents = parseAgents(agentsCell);
+      // Fallback: Wenn im Agent-Feld nichts steht, versuche automatisch
+      // Agenten aus befüllten Preis-/Affiliate-Spalten abzuleiten.
+      if (!agents.length) {
+        const inferHasValue = (idx: number) => {
+          const v = String(idx >= 0 ? (row[idx] ?? '') : '').trim();
+          return v.length > 0;
+        };
+        (['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'] as AgentKey[]).forEach((ag) => {
+          const pIdx = priceIdx[ag];
+          const aIdx = affIdx[ag];
+          if (inferHasValue(pIdx) || inferHasValue(aIdx)) agents.push(ag);
+        });
+        // Deduplizieren
+        agents = Array.from(new Set(agents));
+      }
       if (!agents.length) continue; // mindestens ein Agent notwendig
 
       for (const agent of agents) {
