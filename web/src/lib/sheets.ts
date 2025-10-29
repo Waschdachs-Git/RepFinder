@@ -4,14 +4,36 @@ import path from 'node:path';
 import type { AgentKey } from './types';
 
 // Reads spreadsheet rows using a service account
-// CSV mode: if GOOGLE_SHEETS_CSV_URL is set, fetch a published CSV (no auth)
+// CSV mode: if GOOGLE_SHEETS_CSV_URL(S) is set, fetch one or multiple published CSVs (no auth)
 async function readFromPublishedCsv(): Promise<string[][]> {
-  const url = (process.env.GOOGLE_SHEETS_CSV_URL || '').trim();
-  if (!url) return [];
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`CSV fetch failed: ${res.status} ${res.statusText}`);
-  const text = await res.text();
-  return parseCsv(text);
+  // Accept either:
+  // - GOOGLE_SHEETS_CSV_URL: single URL or comma/whitespace separated list
+  // - GOOGLE_SHEETS_CSV_URLS: comma/whitespace separated list
+  const rawSingle = (process.env.GOOGLE_SHEETS_CSV_URL || '').trim();
+  const rawList = (process.env.GOOGLE_SHEETS_CSV_URLS || '').trim();
+  const allRaw = [rawSingle, rawList].filter(Boolean).join(',');
+  const urls = allRaw
+    .split(/[\n,;\s]+/g)
+    .map((s) => s.trim())
+    .filter((s) => s.startsWith('http'));
+  if (urls.length === 0) return [];
+
+  // Fetch sequentially to avoid throttling; merge keeping the first header only
+  let merged: string[][] = [];
+  for (const url of urls) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`CSV fetch failed: ${res.status} ${res.statusText}`);
+    const text = await res.text();
+    const rows = parseCsv(text);
+    if (!rows.length) continue;
+    if (merged.length === 0) {
+      merged = rows;
+    } else {
+      // append without header
+      merged.push(...rows.slice(1));
+    }
+  }
+  return merged;
 }
 
 // Tiny CSV parser handling quotes and commas

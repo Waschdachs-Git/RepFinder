@@ -11,7 +11,12 @@ This project is configured to run as a standard Node.js server using a tiny cust
 Configure at least one of the data sources:
 
 Option A — Published Google Sheets CSV (no auth):
-- GOOGLE_SHEETS_CSV_URL=https://docs.google.com/spreadsheets/d/<ID>/export?format=csv&gid=<GID>
+- Single tab:
+  - GOOGLE_SHEETS_CSV_URL=https://docs.google.com/spreadsheets/d/<ID>/export?format=csv&gid=<GID>
+- Multiple tabs (one CSV link per sheet):
+  - Either list them comma/whitespace-separated in GOOGLE_SHEETS_CSV_URL
+  - Or set GOOGLE_SHEETS_CSV_URLS with a comma/newline-separated list
+  - We merge all CSVs and keep only the first header row.
 
 Option B — Private Google Sheet via Service Account:
 - GOOGLE_SHEETS_ID=<spreadsheet-id>
@@ -27,7 +32,8 @@ Optional frontend flags (defaults are fine):
 Loading env files on a VPS:
 - This project loads `.env` and `.env.local` automatically via `dotenv` in `server.js`.
 - That means you can upload a `.env.local` next to `server.js` on your VPS (not committed) with e.g.:
-  - `GOOGLE_SHEETS_CSV_URL=...`
+  - `GOOGLE_SHEETS_CSV_URL=...` (single or comma-separated)
+  - or `GOOGLE_SHEETS_CSV_URLS=...` (one per line is fine)
 - Alternatively set the variables in your process manager or hosting control panel.
 
 ## Build & run

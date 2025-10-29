@@ -53,7 +53,12 @@ Datenquellen-Optionen für Produkte (du kannst dein bestehendes Google Sheet wei
 1) Veröffentlichtes CSV (einfach, keine Auth)
    - In Google Sheets: Datei → Freigeben → „Jeder mit dem Link“ (nur ansehen).
    - CSV-Link: `https://docs.google.com/spreadsheets/d/<ID>/export?format=csv&gid=<GID>`
-   - In `.env.local`: `GOOGLE_SHEETS_CSV_URL="<dein-csv-link>"`
+   - In `.env.local`:
+     - Ein Tab: `GOOGLE_SHEETS_CSV_URL="<dein-csv-link>"`
+     - Mehrere Tabs (eine URL pro Tabellenblatt):
+       - Entweder alle in `GOOGLE_SHEETS_CSV_URL` kommasepariert
+       - Oder als Liste in `GOOGLE_SHEETS_CSV_URLS` (Komma oder Zeilenumbruch)
+       - Wir mergen alle CSVs und behalten nur die erste Header-Zeile
    - Effekt: Die API lädt live aus diesem CSV. Keine Credentials nötig. Achtung: öffentlich einsehbar.
 
 2) Service Account (privat, kontrolliert)
@@ -74,7 +79,7 @@ Datenquellen-Optionen für Produkte (du kannst dein bestehendes Google Sheet wei
   - Multi-Tab support (one tab per main category)
     - If you maintain one tab per main category (e.g., Footwear, Tops, Bottoms, Outerwear, Full-Body-Clothing, Headwear, Accessories, Jewelry, Other Stuff), the loader can merge them automatically.
     - Control via env:
-      - `GOOGLE_SHEETS_TABS="Footwear,Tops,Bottoms,Outerwear,Full-Body-Clothing,Headwear,Accessories,Jewel ry,Other Stuff"` explicitly sets which tabs to merge (first tab contributes headers; later tabs append rows without headers).
+  - `GOOGLE_SHEETS_TABS="Footwear,Tops,Bottoms,Outerwear,Full-Body-Clothing,Headwear,Accessories,Jewelry,Other Stuff"` explicitly sets which tabs to merge (first tab contributes headers; later tabs append rows without headers).
       - `GOOGLE_SHEETS_AUTO_TABS=true|false` toggles auto-detection of the standard tabs above; defaults to `true` when `GOOGLE_SHEETS_TABS` is not set.
       - `GOOGLE_SHEETS_RANGE` still applies to each tab (default `A1:ZZ100000`).
     - Ignore tabs with `GOOGLE_SHEETS_IGNORE_TABS` (comma-separated, substring match; e.g., `Test,Archive`).
