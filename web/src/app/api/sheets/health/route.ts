@@ -6,6 +6,7 @@ import path from 'node:path';
 
 type HealthOk = {
   status: 'ok';
+  buildId?: string;
   env: {
     sheetId: boolean;
     serviceEmail: boolean;
@@ -35,6 +36,10 @@ type HealthErr = {
 };
 
 export async function GET() {
+  // Include build ID to verify which version is running on the server
+  let buildId = '';
+  try { buildId = fs.readFileSync(path.join(process.cwd(), '.next', 'BUILD_ID'), 'utf8').trim(); } catch {}
+
   const csvUrl = !!(process.env.GOOGLE_SHEETS_CSV_URL || '').trim();
   const hasPrivateKeyPlain = !!(process.env.GOOGLE_PRIVATE_KEY || '').trim();
   const hasPrivateKeyBase64 = !!(process.env.GOOGLE_PRIVATE_KEY_BASE64 || '').trim();
@@ -110,6 +115,7 @@ export async function GET() {
 
     const ok: HealthOk = {
       status: 'ok',
+      buildId,
       env,
       sheet: {
         mode,
