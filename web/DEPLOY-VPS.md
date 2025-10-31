@@ -24,6 +24,7 @@ Option B — Private Google Sheet via Service Account:
 - GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
   - Alternatively: GOOGLE_PRIVATE_KEY_BASE64 with the Base64 of the PEM
 - Optional: GOOGLE_SHEETS_TAB, GOOGLE_SHEETS_RANGE, GOOGLE_SHEETS_TABS, GOOGLE_SHEETS_IGNORE_TABS
+  - Optional (CSV-like): GOOGLE_SHEETS_GID to target a specific tab by its `gid` (we resolve the title automatically)
 
 Optional frontend flags (defaults are fine):
 - NEXT_PUBLIC_USE_API=true

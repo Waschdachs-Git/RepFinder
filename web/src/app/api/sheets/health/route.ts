@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 // no request object needed
-import { readSheet } from '@/lib/sheets';
+import { readSheet, getTabTitleByGid } from '@/lib/sheets';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -68,7 +68,14 @@ export async function GET() {
 
   try {
     // Small sample to verify header + first rows
-    const tab = (process.env.GOOGLE_SHEETS_TAB || '').trim();
+    let tab = (process.env.GOOGLE_SHEETS_TAB || '').trim();
+    const gidRaw = (process.env.GOOGLE_SHEETS_GID || '').trim();
+    if (!tab && gidRaw) {
+      try {
+        const resolved = await getTabTitleByGid(gidRaw);
+        if (resolved) tab = resolved;
+      } catch {}
+    }
     const baseSample = 'A1:H6';
     const baseCount = 'A:A';
     const sampleRange = tab ? `${tab}!${baseSample}` : baseSample;

@@ -76,6 +76,7 @@ Datenquellen-Optionen für Produkte (du kannst dein bestehendes Google Sheet wei
     - `GOOGLE_SHEETS_IGNORE_TABS` = Tabs, die ignoriert werden (Komma)
     - `SHEETS_IGNORE_PLACEHOLDER_LINKS=true|false` (Default true; ignoriert example/placeholder-Links)
     - `PRODUCTS_CACHE_TTL_MS=120000` (In-Memory-Cache für Produkte, beschleunigt erste Kategorie-Aufrufe)
+  - `GOOGLE_SHEETS_GID=<number>` (wie CSV: nutze die numerische gid eines Tabs; wir lösen den Tab-Namen automatisch)
    - In Google Sheets: das Dokument für die Service-Account-E-Mail „Betrachter“ freigeben.
    - Spalten (erste Zeile = Header): `name, agent, category, price, image, description, affiliateUrl, clicks, id(optional)`
    - Effekt: Die API lädt privat und live aus deinem Sheet.
