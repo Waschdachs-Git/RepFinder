@@ -215,10 +215,15 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
   if (tabsEnv.length > 0) {
     for (const t of tabsEnv) {
       if (shouldIgnore(t)) continue;
-      const r = await readSheet(`${t}!${baseRange}`);
-      if (!r.length) continue;
-      if (rows.length === 0) rows = r; // erstes Tab inkl. Header
-      else rows.push(...r.slice(1)); // weitere Tabs: Zeilen ohne Header
+      try {
+        const r = await readSheet(`${t}!${baseRange}`);
+        if (!r.length) continue;
+        if (rows.length === 0) rows = r; // erstes Tab inkl. Header
+        else rows.push(...r.slice(1)); // weitere Tabs: Zeilen ohne Header
+      } catch {
+        // Fehlende Tabs nicht fatal – einfach überspringen
+        continue;
+      }
     }
     if (rows.length === 0 && tab) {
       // Fallback: Einzel-Tab explizit

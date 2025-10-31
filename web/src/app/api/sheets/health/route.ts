@@ -80,17 +80,33 @@ export async function GET() {
 
     // Small sample to verify header + first rows (use wider range to include all headers)
     const tab = (process.env.GOOGLE_SHEETS_TAB || '').trim();
+    const tabsEnv = String(process.env.GOOGLE_SHEETS_TABS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     const baseSample = 'A1:ZZ6';
     const baseCount = 'A:A';
-    const sampleRange = tab ? `${tab}!${baseSample}` : baseSample;
-    const countRange = tab ? `${tab}!${baseCount}` : baseCount;
+    // If multiple tabs are configured, probe the first working one for header; count rows across all configured tabs
+    let sampleRange = tab ? `${tab}!${baseSample}` : baseSample;
+    let countRanges: string[] = [tab ? `${tab}!${baseCount}` : baseCount];
+    if (!tab && tabsEnv.length > 0) {
+      sampleRange = `${tabsEnv[0]}!${baseSample}`;
+      countRanges = tabsEnv.map((t) => `${t}!${baseCount}`);
+    }
 
     const sample = await readSheet(sampleRange); // CSV mode ignores range
     const header = (sample[0] ?? []).map((v) => String(v));
 
     // Use first column length as an approximation of row count
-    const colA = await readSheet(countRange);
-    const rowCount = Math.max(0, (colA.length || 0) - 1);
+    let rowCount = 0;
+    for (const cr of countRanges) {
+      try {
+        const colA = await readSheet(cr);
+        rowCount += Math.max(0, (colA.length || 0) - 1);
+      } catch {
+        // ignore missing tab in health summary
+      }
+    }
 
     const ok: HealthOk = {
       status: 'ok',
