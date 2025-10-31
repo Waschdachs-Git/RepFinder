@@ -31,12 +31,11 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
           script_stop: true
           command_timeout: 30m
           script: |
             set -Eeuo pipefail
-            BRANCH="${{ github.event.inputs.ref || 'main' }}"
+            BRANCH="${{ github.event.inputs.ref }}"; [ -z "$BRANCH" ] && BRANCH="main"
             REPO_DIR=/var/www/html/RepFinder
             APP_DIR="$REPO_DIR/web"
             command -v pm2 >/dev/null || npm i -g pm2
@@ -58,12 +57,11 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || '22' }}
           script_stop: true
           command_timeout: 30m
           script: |
             set -Eeuo pipefail
-            BRANCH="${{ github.event.inputs.ref || 'main' }}"
+            BRANCH="${{ github.event.inputs.ref }}"; [ -z "$BRANCH" ] && BRANCH="main"
             REPO_DIR=/var/www/html/RepFinder
             APP_DIR="$REPO_DIR/web"
             command -v pm2 >/dev/null || npm i -g pm2
@@ -78,4 +76,7 @@ jobs:
             bash scripts/deploy.sh
 
       - name: Show deployed commit
-        run: echo "Deployed ref: ${{ github.event.inputs.ref || github.sha }}"
+        env:
+          REF: ${{ github.event.inputs.ref }}
+        run: |
+          echo "Deployed ref: ${REF:-$GITHUB_SHA}"
