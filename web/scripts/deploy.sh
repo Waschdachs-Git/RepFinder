@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Safe, idempotent deploy script with cooldown & lock
-set -euo pipefail
+# Robust, idempotent deploy script with cooldown, lock & strict error handling
+set -Eeuo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 COOLDOWN_SECONDS=${COOLDOWN_SECONDS:-300}   # 5 min default
@@ -9,6 +9,20 @@ LAST_RUN_FILE="/tmp/repfinder-deploy.last"
 NAME=${PM2_NAME:-repfinder}
 
 log() { echo "[deploy] $(date +'%F %T') $*"; }
+
+# On error: print helpful diagnostics
+on_err() {
+  code=$?
+  echo
+  echo "[deploy] ERROR: Deploy abgebrochen (exit $code)." >&2
+  echo "[deploy] Letzte npm-Logs:" >&2
+  tail -n 120 /root/.npm/_logs/*-debug-*.log 2>/dev/null || true
+  echo "[deploy] PM2 Prozessinfo:" >&2
+  pm2 info "${NAME:-repfinder}" 2>/dev/null | sed -n '1,120p' || true
+  echo "[deploy] PM2 Logs (tail):" >&2
+  pm2 logs --lines 120 "${NAME:-repfinder}" 2>/dev/null || true
+}
+trap on_err ERR
 
 # Cooldown
 if [[ -f "$LAST_RUN_FILE" ]]; then
@@ -33,8 +47,13 @@ cd "$APP_DIR"
 
 # Ensure git available and repo clean
 log "Git fetch & pull"
- git fetch --all --quiet || true
- git reset --hard HEAD --quiet || true
+ git fetch --all --prune --quiet
+ git reset --hard origin/"${BRANCH:-main}" --quiet
+ # ensure we are on configured branch (default: main)
+ current_branch=$(git rev-parse --abbrev-ref HEAD)
+ if [[ "$current_branch" != "${BRANCH:-main}" ]]; then
+   git checkout -q "${BRANCH:-main}"
+ fi
  git pull --rebase --autostash
 
 # Install deps
@@ -44,6 +63,12 @@ log "npm ci"
 # Build once (do NOT run as a daemon)
 log "npm run build"
  npm run -s build
+
+# Verify Next build completed
+if [[ ! -f .next/BUILD_ID ]]; then
+  log "Build fehlgeschlagen: .next/BUILD_ID fehlt"; exit 1
+fi
+log "BUILD_ID: $(cat .next/BUILD_ID)"
 
 # Start/Restart pm2 service
 if pm2 describe "$NAME" >/dev/null 2>&1; then
@@ -56,21 +81,46 @@ fi
 
 pm2 save || true
 
-# Optional smoke test
+# Wait for server and validate health + data source
 HEALTH_URL=${HEALTH_URL:-http://localhost:3000/api/sheets/health}
+PRODUCTS_HEAD=${PRODUCTS_HEAD:-http://localhost:3000/api/products}
+
 log "Health check: $HEALTH_URL"
-set +e
-for i in {1..30}; do
-  code=$(curl -s -o /tmp/health.json -w '%{http_code}' "$HEALTH_URL")
+for i in {1..40}; do
+  code=$(curl -s -o /tmp/health.json -w '%{http_code}' "$HEALTH_URL") || code=000
   if [[ "$code" == "200" ]]; then
-    log "Health OK"
-    head -c 800 /tmp/health.json 2>/dev/null || true
-    echo
+    # Basic validations without jq
+    payload=$(cat /tmp/health.json)
+    # Must include mode:"sheets"
+    if ! grep -q '"mode"\s*:\s*"sheets"' <<<"$payload"; then
+      log "Health check fehlgeschlagen: mode != sheets"; echo "$payload" | head -c 800; echo; exit 2
+    fi
+    # Must include sampleRange with A1:ZZ
+    if ! grep -q 'A1:ZZ' <<<"$payload"; then
+      log "Health check fehlgeschlagen: sampleRange ist zu schmal (erwartet A1:ZZ*)"; echo "$payload" | head -c 800; echo; exit 2
+    fi
+    # BuildId must exist
+    if ! grep -q '"buildId"' <<<"$payload"; then
+      log "Health check fehlgeschlagen: buildId fehlt"; echo "$payload" | head -c 800; echo; exit 2
+    fi
+    # rowCount > 0
+    rowCount=$(grep -o '"rowCount"\s*:\s*[0-9]\+' <<<"$payload" | awk -F: '{print $2}' | tr -d ' ')
+    if [[ -z "$rowCount" || "$rowCount" -le 0 ]]; then
+      log "Health check fehlgeschlagen: rowCount <= 0"; echo "$payload" | head -c 800; echo; exit 2
+    fi
+    log "Health OK (rowCount=$rowCount)"
     break
   fi
   sleep 2
-  [[ $i -eq 30 ]] && { log "Health timeout"; exit 1; }
+  if [[ $i -eq 40 ]]; then
+    log "Health timeout ($code)"; exit 1
+  fi
 done
-set -e
+
+log "Products source header check: $PRODUCTS_HEAD"
+source_header=$(curl -sI "$PRODUCTS_HEAD" | tr -d '\r' | grep -i '^x-products-source:' | awk '{print tolower($0)}' || true)
+if ! grep -q 'x-products-source: sheets' <<<"$source_header"; then
+  log "Products Quelle nicht 'sheets' (Header war: ${source_header:-<leer>})"; exit 3
+fi
 
 log "Done"
