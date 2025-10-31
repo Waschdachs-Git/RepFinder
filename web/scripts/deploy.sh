@@ -87,46 +87,68 @@ fi
 
 pm2 save || true
 
-# Wait for server and validate health + data source
+# Wait for server and validate health + data source (can be relaxed via flags)
 HEALTH_URL=${HEALTH_URL:-http://localhost:3000/api/sheets/health}
 PRODUCTS_HEAD=${PRODUCTS_HEAD:-http://localhost:3000/api/products}
 
-log "Health check: $HEALTH_URL"
-for i in {1..40}; do
-  code=$(curl -s -o /tmp/health.json -w '%{http_code}' "$HEALTH_URL") || code=000
-  if [[ "$code" == "200" ]]; then
-    # Basic validations without jq
-    payload=$(cat /tmp/health.json)
-    # Must include mode:"sheets"
-    if ! grep -q '"mode"\s*:\s*"sheets"' <<<"$payload"; then
-      log "Health check fehlgeschlagen: mode != sheets"; echo "$payload" | head -c 800; echo; exit 2
+if [[ "${DEPLOY_SKIP_HEALTH:-0}" != "1" ]]; then
+  log "Health check: $HEALTH_URL"
+  for i in {1..40}; do
+    code=$(curl -s -o /tmp/health.json -w '%{http_code}' "$HEALTH_URL") || code=000
+    if [[ "$code" == "200" ]]; then
+      payload=$(cat /tmp/health.json)
+      # Must include mode:"sheets"
+      if ! grep -q '"mode"\s*:\s*"sheets"' <<<"$payload"; then
+        if [[ "${DEPLOY_ALLOW_BUILTIN:-0}" == "1" ]]; then
+          log "WARN: mode != sheets, fahre fort wegen DEPLOY_ALLOW_BUILTIN=1"; break
+        fi
+        log "Health check fehlgeschlagen: mode != sheets"; echo "$payload" | head -c 800; echo; exit 2
+      fi
+      # Must include sampleRange with A1:ZZ
+      if ! grep -q 'A1:ZZ' <<<"$payload"; then
+        if [[ "${DEPLOY_ALLOW_BUILTIN:-0}" == "1" ]]; then
+          log "WARN: sampleRange nicht A1:ZZ, fahre fort wegen DEPLOY_ALLOW_BUILTIN=1"; break
+        fi
+        log "Health check fehlgeschlagen: sampleRange ist zu schmal (erwartet A1:ZZ*)"; echo "$payload" | head -c 800; echo; exit 2
+      fi
+      # BuildId must exist
+      if ! grep -q '"buildId"' <<<"$payload"; then
+        if [[ "${DEPLOY_ALLOW_BUILTIN:-0}" == "1" ]]; then
+          log "WARN: buildId fehlt, fahre fort wegen DEPLOY_ALLOW_BUILTIN=1"; break
+        fi
+        log "Health check fehlgeschlagen: buildId fehlt"; echo "$payload" | head -c 800; echo; exit 2
+      fi
+      # rowCount > 0
+      rowCount=$(grep -o '"rowCount"\s*:\s*[0-9]\+' <<<"$payload" | awk -F: '{print $2}' | tr -d ' ')
+      if [[ -z "$rowCount" || "$rowCount" -le 0 ]]; then
+        if [[ "${DEPLOY_ALLOW_BUILTIN:-0}" == "1" ]]; then
+          log "WARN: rowCount <= 0, fahre fort wegen DEPLOY_ALLOW_BUILTIN=1"; break
+        fi
+        log "Health check fehlgeschlagen: rowCount <= 0"; echo "$payload" | head -c 800; echo; exit 2
+      fi
+      log "Health OK (rowCount=$rowCount)"
+      break
     fi
-    # Must include sampleRange with A1:ZZ
-    if ! grep -q 'A1:ZZ' <<<"$payload"; then
-      log "Health check fehlgeschlagen: sampleRange ist zu schmal (erwartet A1:ZZ*)"; echo "$payload" | head -c 800; echo; exit 2
+    sleep 2
+    if [[ $i -eq 40 ]]; then
+      if [[ "${DEPLOY_ALLOW_BUILTIN:-0}" == "1" ]]; then
+        log "WARN: Health timeout ($code), fahre fort wegen DEPLOY_ALLOW_BUILTIN=1"; break
+      fi
+      log "Health timeout ($code)"; exit 1
     fi
-    # BuildId must exist
-    if ! grep -q '"buildId"' <<<"$payload"; then
-      log "Health check fehlgeschlagen: buildId fehlt"; echo "$payload" | head -c 800; echo; exit 2
-    fi
-    # rowCount > 0
-    rowCount=$(grep -o '"rowCount"\s*:\s*[0-9]\+' <<<"$payload" | awk -F: '{print $2}' | tr -d ' ')
-    if [[ -z "$rowCount" || "$rowCount" -le 0 ]]; then
-      log "Health check fehlgeschlagen: rowCount <= 0"; echo "$payload" | head -c 800; echo; exit 2
-    fi
-    log "Health OK (rowCount=$rowCount)"
-    break
-  fi
-  sleep 2
-  if [[ $i -eq 40 ]]; then
-    log "Health timeout ($code)"; exit 1
-  fi
-done
+  done
+else
+  log "Health check übersprungen (DEPLOY_SKIP_HEALTH=1)"
+fi
 
 log "Products source header check: $PRODUCTS_HEAD"
 source_header=$(curl -sI "$PRODUCTS_HEAD" | tr -d '\r' | grep -i '^x-products-source:' | awk '{print tolower($0)}' || true)
 if ! grep -q 'x-products-source: sheets' <<<"$source_header"; then
-  log "Products Quelle nicht 'sheets' (Header war: ${source_header:-<leer>})"; exit 3
+  if [[ "${DEPLOY_ALLOW_BUILTIN:-0}" == "1" ]]; then
+    log "WARN: Products Quelle nicht 'sheets' (war: ${source_header:-<leer>}). DEPLOY_ALLOW_BUILTIN=1 erlaubt Fortsetzen."
+  else
+    log "Products Quelle nicht 'sheets' (Header war: ${source_header:-<leer>})"; exit 3
+  fi
 fi
 
 log "Done"

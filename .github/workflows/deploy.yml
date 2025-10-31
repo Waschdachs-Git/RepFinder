@@ -12,6 +12,14 @@ on:
         description: 'Git ref to deploy (branch/tag/sha)'
         required: false
         default: 'main'
+      allow_builtin:
+        description: 'Temporarily allow builtin source / skip strict checks (true/false)'
+        required: false
+        default: 'false'
+      skip_health:
+        description: 'Skip health checks (true/false)'
+        required: false
+        default: 'false'
 
 jobs:
   deploy:
@@ -35,6 +43,9 @@ jobs:
           script: |
             set -Eeuo pipefail
             BRANCH="${{ github.event.inputs.ref }}"; [ -z "$BRANCH" ] && BRANCH="main"
+            # Optional flags to relax checks during first setup/debug
+            if [ "${{ github.event.inputs.allow_builtin }}" = "true" ]; then export DEPLOY_ALLOW_BUILTIN=1; fi
+            if [ "${{ github.event.inputs.skip_health }}" = "true" ]; then export DEPLOY_SKIP_HEALTH=1; fi
             REPO_DIR=/var/www/html/RepFinder
             APP_DIR="$REPO_DIR/web"
             command -v pm2 >/dev/null || npm i -g pm2
