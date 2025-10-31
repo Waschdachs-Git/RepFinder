@@ -118,6 +118,14 @@ export default function CategoryClient({ slug }: { slug: string }) {
       .finally(() => setLoading(false));
   }, [agent, slug, cat, sort, query, page, favOnly, priceMin, priceMax, favTick, subParamLower, subParam]);
 
+  // Merke die letzte Listen-URL (inkl. Filter) für bessere Zurück-Navigation aus der Detailansicht
+  useEffect(() => {
+    try {
+      const url = typeof window !== 'undefined' ? (window.location.pathname + window.location.search) : '';
+      if (url) sessionStorage.setItem('pf:last-list-url', url);
+    } catch {}
+  }, [agent, slug, sort, query, page, favOnly, priceMin, priceMax, subParam]);
+
   if (!intro) return <div className="py-10">Category not found.</div>;
 
   return (

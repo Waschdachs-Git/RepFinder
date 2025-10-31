@@ -11,6 +11,7 @@ const KEY = 'pf:agent-register-seen:'; // + agent key
 export default function RegistrationPrompt() {
   const { agent } = useAgent();
   const [open, setOpen] = useState(false);
+  const SESSION_KEY = 'pf:register-session-shown';
 
   // Auf Agent-Wechsel hören und einmalig pro Agent anzeigen
   useEffect(() => {
@@ -24,6 +25,20 @@ export default function RegistrationPrompt() {
     };
     window.addEventListener('pf:agent-changed', onChange);
     return () => window.removeEventListener('pf:agent-changed', onChange);
+  }, []);
+
+  // Beim ersten Seitenbesuch pro Browser-Session einmalig öffnen (wenn für Agent noch nicht bestätigt)
+  useEffect(() => {
+    try {
+      const shownThisSession = sessionStorage.getItem(SESSION_KEY) === '1';
+      if (!shownThisSession) {
+        const seen = localStorage.getItem(KEY + agent);
+        if (!seen) setOpen(true);
+        sessionStorage.setItem(SESSION_KEY, '1');
+      }
+    } catch {}
+    // nur beim Mount ausführen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const offer = useMemo(() => OFFERS[agent], [agent]);

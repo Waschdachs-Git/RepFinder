@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { addClick, formatProductPrice, isFavorite, toggleFavorite, DETAIL_LEGAL_NOTE, AFFILIATE_DISCLAIMER, getDisplayTitle, IS_STATIC, API_BASE, USE_API } from '@/lib/utils';
 import ConsentImage from '@/components/ConsentImage';
 import { useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ async function loadStaticProduct(id: string): Promise<Product | null> {
 }
 
 export default function ProductDetailClient({ id }: { id: string }) {
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [fav, setFav] = useState(false);
@@ -67,7 +69,29 @@ export default function ProductDetailClient({ id }: { id: string }) {
 
   return (
     <div className="py-8">
-      <Link href="/" className="text-sm text-neutral-600 hover:text-neutral-900">← Back</Link>
+      <button
+        type="button"
+        className="text-sm text-neutral-600 hover:text-neutral-900"
+        onClick={() => {
+          try {
+            const sameOriginRef = document.referrer && new URL(document.referrer).origin === location.origin;
+            if (sameOriginRef && window.history.length > 1) {
+              router.back();
+              return;
+            }
+          } catch {}
+          // Fallback: zuletzt besuchte Liste oder passende Kategorie
+          try {
+            const last = sessionStorage.getItem('pf:last-list-url');
+            if (last) { router.push(last); return; }
+          } catch {}
+          const cat = product?.category ? `/c/${product.category}` : '/';
+          router.push(cat);
+        }}
+        aria-label="Zurück"
+      >
+        ← Back
+      </button>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4 items-start">
         <div className="w-full rounded-3xl shadow-sm overflow-hidden" style={{ aspectRatio: '4 / 3', background: '#f6f6f6' }}>
           <ConsentImage
