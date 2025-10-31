@@ -68,10 +68,16 @@ function parseCsv(text: string): string[][] {
 }
 
 export async function readSheet(range: string): Promise<string[][]> {
-  // CSV mode ignores range (returns entire sheet)
-  if ((process.env.GOOGLE_SHEETS_CSV_URL || '').trim()) {
-    return await readFromPublishedCsv();
-  }
+  // Decide mode with correct precedence:
+  // 1) Explicit override via GOOGLE_SHEETS_MODE=csv|sheets
+  // 2) If Service Account is fully configured, prefer Sheets API
+  // 3) Else if CSV URL(s) provided, use published CSV
+  // 4) Else throw missing config
+  const forceMode = String(process.env.GOOGLE_SHEETS_MODE || '').trim().toLowerCase();
+  const csvUrlsRaw = [
+    String(process.env.GOOGLE_SHEETS_CSV_URL || '').trim(),
+    String(process.env.GOOGLE_SHEETS_CSV_URLS || '').trim(),
+  ].filter(Boolean).join(',');
 
   const normalizeStr = (v: string | undefined | null): string => {
     let s = String(v ?? '').trim();
@@ -108,6 +114,19 @@ export async function readSheet(range: string): Promise<string[][]> {
   };
 
   const privateKey = getPrivateKey();
+
+  // Mode decision after we know whether a private key exists
+  if (forceMode === 'csv') {
+    return await readFromPublishedCsv();
+  }
+  if (forceMode !== 'sheets') {
+    // No explicit force to sheets: if service account is NOT fully configured, but CSV is, use CSV
+    if ((!spreadsheetId || !clientEmail || !privateKey) && csvUrlsRaw) {
+      return await readFromPublishedCsv();
+    }
+  }
+
+  // From here, we expect sheets mode (service account)
   if (!spreadsheetId || !clientEmail || !privateKey) {
     throw new Error('Missing Google Sheets config (sheet id, service email, or private key).');
   }
@@ -129,54 +148,6 @@ export async function readSheet(range: string): Promise<string[][]> {
   return values.map((row) => row.map((cell) => String(cell)));
 }
 
-// Resolve a tab title from a numeric GID (sheetId) using the service account
-export async function getTabTitleByGid(gidRaw: string | number): Promise<string | null> {
-  const gid = Number(gidRaw);
-  if (!Number.isFinite(gid)) return null;
-
-  // If running in CSV mode, we cannot resolve metadata
-  if ((process.env.GOOGLE_SHEETS_CSV_URL || '').trim()) return null;
-
-  const normalizeStr = (v: string | undefined | null): string => {
-    let s = String(v ?? '').trim();
-    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
-    return s.trim();
-  };
-  const spreadsheetId = normalizeStr(process.env.GOOGLE_SHEETS_ID);
-  const clientEmail = normalizeStr(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL);
-
-  const normalizePem = (pem: string): string => {
-    let p = (pem || '').trim();
-    if ((p.startsWith('"') && p.endsWith('"')) || (p.startsWith("'") && p.endsWith("'"))) p = p.slice(1, -1);
-    p = p.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\\n/g, '\n');
-    return p;
-  };
-  const decodeBase64 = (b64: string): string => Buffer.from(b64, 'base64').toString('utf8');
-  const getPrivateKey = (): string | null => {
-    const envB64 = (process.env.GOOGLE_PRIVATE_KEY_BASE64 || '').trim();
-    if (envB64) {
-      try { return normalizePem(decodeBase64(envB64)); } catch {}
-    }
-    const envPlain = (process.env.GOOGLE_PRIVATE_KEY || '').trim();
-    if (envPlain) return normalizePem(envPlain);
-    return null;
-  };
-
-  const key = getPrivateKey();
-  if (!spreadsheetId || !clientEmail || !key) return null;
-
-  const auth = new google.auth.JWT({ email: clientEmail, key, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'] });
-  const sheets = google.sheets({ version: 'v4', auth });
-  try {
-    const meta = await sheets.spreadsheets.get({ spreadsheetId });
-    const list = meta.data.sheets || [];
-    for (const s of list) {
-      const sid = s.properties?.sheetId;
-      if (typeof sid === 'number' && sid === gid) return s.properties?.title || null;
-    }
-  } catch {}
-  return null;
-}
 export type SheetProduct = {
   id?: string;
   name: string;
@@ -195,13 +166,11 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
   // Expect a header row in first line (CSV mode returns full sheet)
   // Allow overriding tab and/or range via env to support existing sheets
   const baseRange = (process.env.GOOGLE_SHEETS_RANGE || 'A1:ZZ100000').trim();
-  let tab = (process.env.GOOGLE_SHEETS_TAB || '').trim();
-  const gidRaw = (process.env.GOOGLE_SHEETS_GID || '').trim();
-  const tabsEnvRaw = (process.env.GOOGLE_SHEETS_TABS || '')
+  const tab = (process.env.GOOGLE_SHEETS_TAB || '').trim();
+  const tabsEnv = (process.env.GOOGLE_SHEETS_TABS || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
-  let tabsEnv = tabsEnvRaw;
   const ignoreTabs = new Set(
     (process.env.GOOGLE_SHEETS_IGNORE_TABS || '')
       .split(',')
@@ -216,14 +185,6 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
   };
 
   let rows: string[][] = [];
-  // If a GID is provided, resolve it to a tab title and prefer it
-  if (!tab && gidRaw) {
-    try {
-      const resolved = await getTabTitleByGid(gidRaw);
-      if (resolved) tab = resolved;
-    } catch {}
-  }
-
   if (tabsEnv.length === 0) {
     // Auto-Detect: Falls keine Tabs gesetzt sind, probiere Standard-Hauptkategorien als Tab-Namen
     // Beispiel: Footwear, Tops, Bottoms, Outerwear, Full-Body-Clothing, Headwear, Accessories, Jewelry, Other Stuff
@@ -300,12 +261,6 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
   const hasMultiAgentPrices = hasAgentSpecificPriceCol || hasAgentSpecificAffCol;
 
   const out: SheetProduct[] = [];
-  const ignorePlaceholders = String(process.env.SHEETS_IGNORE_PLACEHOLDER_LINKS || 'true').toLowerCase() === 'true';
-  const isPlaceholderUrl = (u: string) => {
-    const s = String(u || '').trim();
-    if (!s) return true; // treat empty as placeholder for this helper; combined with flags below
-    return /(example\.com|placeholder|^#|^https?:\/\/(www\.)?example)/i.test(s);
-  };
   const slugify = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   const shortHash = (s: string) => {
     let h = 0;
@@ -428,9 +383,8 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
         const isUSD = /^usd\b/i.test(priceNorm);
         const numeric = priceNorm.replace(/[^0-9,\.]/g, '').replace(',', '.');
         const price = Number(numeric) || 0;
-  const affiliateUrl = String(aIdx >= 0 ? (row[aIdx] ?? '') : '');
-  if (requireAff && !affiliateUrl) continue; // Affiliate-URL nur falls gefordert Pflicht
-  if (ignorePlaceholders && isPlaceholderUrl(affiliateUrl)) continue;
+        const affiliateUrl = String(aIdx >= 0 ? (row[aIdx] ?? '') : '');
+        if (requireAff && !affiliateUrl) continue; // Affiliate-URL nur falls gefordert Pflicht
         let id = String(iId >= 0 ? (row[iId] ?? '') : '');
         if (!id) {
           const slug = slugify(String(name));
@@ -454,8 +408,7 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
     const agent: AgentKey = ['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'].includes(agentRaw)
       ? (agentRaw as AgentKey)
       : 'cnfans';
-  const affiliateUrl = String(iAffiliate >= 0 ? (row[iAffiliate] ?? '') : '');
-  if (ignorePlaceholders && isPlaceholderUrl(affiliateUrl)) continue;
+    const affiliateUrl = String(iAffiliate >= 0 ? (row[iAffiliate] ?? '') : '');
     let id = String(iId >= 0 ? (row[iId] ?? '') : '');
     if (!id) {
       const slug = slugify(String(name));

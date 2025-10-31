@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 // no request object needed
-import { readSheet, getTabTitleByGid } from '@/lib/sheets';
+import { readSheet } from '@/lib/sheets';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -67,16 +67,20 @@ export async function GET() {
   }
 
   try {
-    // Small sample to verify header + first rows
-    let tab = (process.env.GOOGLE_SHEETS_TAB || '').trim();
-    const gidRaw = (process.env.GOOGLE_SHEETS_GID || '').trim();
-    if (!tab && gidRaw) {
-      try {
-        const resolved = await getTabTitleByGid(gidRaw);
-        if (resolved) tab = resolved;
-      } catch {}
-    }
-    const baseSample = 'A1:H6';
+    // Determine effective mode similar to readSheet
+    const forceMode = String(process.env.GOOGLE_SHEETS_MODE || '').trim().toLowerCase();
+    const csvConfigured = !!(
+      (process.env.GOOGLE_SHEETS_CSV_URL || '').trim() ||
+      (process.env.GOOGLE_SHEETS_CSV_URLS || '').trim()
+    );
+    let mode: 'csv' | 'sheets' = 'sheets';
+    if (forceMode === 'csv') mode = 'csv';
+    else if (forceMode === 'sheets') mode = 'sheets';
+    else if (!(env.sheetId && env.serviceEmail && env.privateKey) && csvConfigured) mode = 'csv';
+
+    // Small sample to verify header + first rows (use wider range to include all headers)
+    const tab = (process.env.GOOGLE_SHEETS_TAB || '').trim();
+    const baseSample = 'A1:ZZ6';
     const baseCount = 'A:A';
     const sampleRange = tab ? `${tab}!${baseSample}` : baseSample;
     const countRange = tab ? `${tab}!${baseCount}` : baseCount;
@@ -92,7 +96,7 @@ export async function GET() {
       status: 'ok',
       env,
       sheet: {
-        mode: env.csvUrl ? 'csv' : 'sheets',
+        mode,
         header,
         rowCount,
         sampleRange,
