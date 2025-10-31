@@ -242,6 +242,12 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
   const hasMultiAgentPrices = hasAgentSpecificPriceCol || hasAgentSpecificAffCol;
 
   const out: SheetProduct[] = [];
+  const ignorePlaceholders = String(process.env.SHEETS_IGNORE_PLACEHOLDER_LINKS || 'true').toLowerCase() === 'true';
+  const isPlaceholderUrl = (u: string) => {
+    const s = String(u || '').trim();
+    if (!s) return true; // treat empty as placeholder for this helper; combined with flags below
+    return /(example\.com|placeholder|^#|^https?:\/\/(www\.)?example)/i.test(s);
+  };
   const slugify = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   const shortHash = (s: string) => {
     let h = 0;
@@ -364,8 +370,9 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
         const isUSD = /^usd\b/i.test(priceNorm);
         const numeric = priceNorm.replace(/[^0-9,\.]/g, '').replace(',', '.');
         const price = Number(numeric) || 0;
-        const affiliateUrl = String(aIdx >= 0 ? (row[aIdx] ?? '') : '');
-        if (requireAff && !affiliateUrl) continue; // Affiliate-URL nur falls gefordert Pflicht
+  const affiliateUrl = String(aIdx >= 0 ? (row[aIdx] ?? '') : '');
+  if (requireAff && !affiliateUrl) continue; // Affiliate-URL nur falls gefordert Pflicht
+  if (ignorePlaceholders && isPlaceholderUrl(affiliateUrl)) continue;
         let id = String(iId >= 0 ? (row[iId] ?? '') : '');
         if (!id) {
           const slug = slugify(String(name));
@@ -389,7 +396,8 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
     const agent: AgentKey = ['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'].includes(agentRaw)
       ? (agentRaw as AgentKey)
       : 'cnfans';
-    const affiliateUrl = String(iAffiliate >= 0 ? (row[iAffiliate] ?? '') : '');
+  const affiliateUrl = String(iAffiliate >= 0 ? (row[iAffiliate] ?? '') : '');
+  if (ignorePlaceholders && isPlaceholderUrl(affiliateUrl)) continue;
     let id = String(iId >= 0 ? (row[iId] ?? '') : '');
     if (!id) {
       const slug = slugify(String(name));
