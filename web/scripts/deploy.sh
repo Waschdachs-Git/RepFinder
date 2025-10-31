@@ -71,6 +71,12 @@ fi
 log "BUILD_ID: $(cat .next/BUILD_ID)"
 
 # Start/Restart pm2 service
+# Kill stray Next.js servers started manually (prevents double-serve and high CPU)
+log "Ensuring no stray 'next start' processes are running"
+pkill -f 'next start' 2>/dev/null || true
+pkill -f 'node .*next start' 2>/dev/null || true
+pkill -f 'npm run start' 2>/dev/null || true
+
 if pm2 describe "$NAME" >/dev/null 2>&1; then
   log "pm2 restart $NAME"
   pm2 restart "$NAME" --update-env --time
