@@ -11,7 +11,11 @@ type Props = {
 export default function Pagination({ page, total, pageSize, onChange, loading }: Props) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const clamp = (p: number) => Math.min(pageCount, Math.max(1, p));
-  const go = (p: number) => !loading && onChange(clamp(p));
+  const go = (p: number) => {
+    if (loading) return;
+    try { window?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    onChange(clamp(p));
+  };
 
   // Fenster mit Ellipsen: 1, ..., curr-2, curr-1, curr, curr+1, curr+2, ..., last
   const windowSize = 2;

@@ -145,7 +145,16 @@ export default function CategoryClient({ slug }: { slug: string }) {
         />
       </div>
 
-      <p className="text-neutral-500 mb-2">{total} Produkte gefunden{subParam ? ` – Filter: ${subParam}` : ''}</p>
+      <p className="text-neutral-500 mb-2">
+        {loading ? (
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-block h-3 w-3 rounded-full border-2 border-[hsl(var(--accent))] border-t-transparent animate-spin align-middle" aria-hidden />
+            Lädt Produkte…
+          </span>
+        ) : (
+          <>{total} Produkte gefunden{subParam ? ` – Filter: ${subParam}` : ''}</>
+        )}
+      </p>
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
           {Array.from({ length: pageSize }).map((_, i) => (

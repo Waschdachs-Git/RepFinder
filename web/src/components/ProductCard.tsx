@@ -6,8 +6,34 @@ import { addClick, formatProductPrice, isFavorite, toggleFavorite, getDisplayTit
 import ConsentImage from './ConsentImage';
 import { useEffect, useState } from 'react';
 
+// Re-use the same consent flags as ConsentImage to keep warnings in sync
+const IMG_CONSENT_KEY = 'pf:image-consent';
+const IMG_CODE_OK_KEY = 'pf:image-code-ok';
+
+function readImageConsent(secret: string | undefined) {
+  try {
+    const ls = typeof localStorage !== 'undefined' ? localStorage : undefined;
+    const ss = typeof sessionStorage !== 'undefined' ? sessionStorage : undefined;
+    const c = (ls?.getItem(IMG_CONSENT_KEY) === '1') || (ss?.getItem(IMG_CONSENT_KEY) === '1');
+    const codeOk = !secret || (ls?.getItem(IMG_CODE_OK_KEY) === '1') || (ss?.getItem(IMG_CODE_OK_KEY) === '1');
+    return !!c && !!codeOk;
+  } catch {
+    return false;
+  }
+}
+
 export default function ProductCard({ product }: { product: Product }) {
   const [fav, setFav] = useState(false);
+  // Bild-/Rechtshinweis: Wenn bereits zugestimmt, blenden wir auch die
+  // Text-Warnungen unter dem Produktnamen aus (Desktop + Mobile)
+  const [consented, setConsented] = useState(false);
+  const secret = (process.env.NEXT_PUBLIC_IMAGE_SECRET || '').trim();
+  useEffect(() => {
+    setConsented(readImageConsent(secret));
+    const onGlobal = () => setConsented(readImageConsent(secret));
+    try { window.addEventListener('pf:image-consent-changed', onGlobal as EventListener); } catch {}
+    return () => { try { window.removeEventListener('pf:image-consent-changed', onGlobal as EventListener); } catch {}; };
+  }, [secret]);
   // Dynamische Ratio: startet bei 4/3 und passt sich dem geladenen Bild an
   const [ratio] = useState<number>(4 / 3);
   // Slideshow Index für mehrere Alt-Bilder
@@ -145,26 +171,30 @@ export default function ProductCard({ product }: { product: Product }) {
             {getDisplayTitle(product)}
           </Link>
         )}
-        {/* Desktop: disclaimer below price, collapsed until hover */}
-        <div className="hidden md:block">
-          <div className="transition-all duration-200 overflow-hidden max-h-0 opacity-0 group-hover:max-h-60 group-hover:overflow-visible group-hover:opacity-100 group-hover:mt-2">
-            <p className="text-xs text-neutral-600 leading-snug" aria-label="Legal notice">{CARD_LEGAL_NOTE}</p>
-            <small className="block text-[11px] text-neutral-500 mt-1">{AFFILIATE_DISCLAIMER}</small>
+        {/* Desktop: disclaimer unterdrücken, wenn Einwilligung bereits erteilt */}
+        {!consented && (
+          <div className="hidden md:block">
+            <div className="transition-all duration-200 overflow-hidden max-h-0 opacity-0 group-hover:max-h-60 group-hover:overflow-visible group-hover:opacity-100 group-hover:mt-2">
+              <p className="text-xs text-neutral-600 leading-snug" aria-label="Legal notice">{CARD_LEGAL_NOTE}</p>
+              <small className="block text-[11px] text-neutral-500 mt-1">{AFFILIATE_DISCLAIMER}</small>
+            </div>
           </div>
-        </div>
+        )}
         <div className="mt-2 text-[hsl(var(--accent))] font-semibold">
           {formatProductPrice(product)}
         </div>
-        {/* Mobile: toggle for notices */}
-        <div className="md:hidden mt-2">
-          <details className="text-xs text-neutral-500">
-            <summary className="cursor-pointer list-none inline-flex items-center gap-1 select-none">Show notices
-              <span aria-hidden>▾</span>
-            </summary>
-            <p className="mt-1 leading-snug">{CARD_LEGAL_NOTE}</p>
-            <small className="block text-[11px] text-neutral-400 mt-1">{AFFILIATE_DISCLAIMER}</small>
-          </details>
-        </div>
+        {/* Mobile: Hinweise nur anzeigen, wenn keine Einwilligung */}
+        {!consented && (
+          <div className="md:hidden mt-2">
+            <details className="text-xs text-neutral-500">
+              <summary className="cursor-pointer list-none inline-flex items-center gap-1 select-none">Show notices
+                <span aria-hidden>▾</span>
+              </summary>
+              <p className="mt-1 leading-snug">{CARD_LEGAL_NOTE}</p>
+              <small className="block text-[11px] text-neutral-400 mt-1">{AFFILIATE_DISCLAIMER}</small>
+            </details>
+          </div>
+        )}
       </div>
     </div>
   );

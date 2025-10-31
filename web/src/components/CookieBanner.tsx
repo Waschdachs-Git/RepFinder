@@ -10,7 +10,11 @@ export default function CookieBanner() {
   useEffect(() => {
     try {
       const dismissed = localStorage.getItem(COOKIE_BANNER_STATE) === '1';
-      setOpen(!dismissed);
+      // Wenn bereits eine Bild-Einwilligung vorliegt, haben wir schon eine
+      // rechtliche Bestätigung – Cookie-Banner kann initial unterdrückt werden,
+      // um Dopplungen zu vermeiden.
+      const imgConsent = localStorage.getItem('pf:image-consent') === '1' || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pf:image-consent') === '1');
+      setOpen(!dismissed && !imgConsent);
     } catch {
       setOpen(true);
     }

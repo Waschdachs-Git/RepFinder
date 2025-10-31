@@ -12,6 +12,15 @@ export default function AffiliateBanner() {
       if (!seen) setOpen(true);
     } catch {}
   }, []);
+  // Optional Vereinheitlichung: Wenn Bild-Einwilligung schon erteilt ist,
+  // Banner nicht erneut anzeigen (reduziert Bestätigungen). Diese Änderung
+  // greift NICHT in die produkt-spezifische Warnung ein.
+  useEffect(() => {
+    try {
+      const consent = localStorage.getItem('pf:image-consent') === '1' || sessionStorage.getItem('pf:image-consent') === '1';
+      if (consent) setOpen(false);
+    } catch {}
+  }, []);
   if (!open) return null;
   const content = (
     <div className="fixed inset-0 z-[65] pointer-events-none">
