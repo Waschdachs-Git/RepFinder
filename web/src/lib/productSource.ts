@@ -8,6 +8,15 @@ type SourceMode = 'csv' | 'sheets' | 'local-json' | 'builtin';
 
 const VALID_AGENTS: AgentKey[] = ['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'];
 
+// Lightweight in-memory cache to reduce repeat loads under traffic
+type CacheEntry = { at: number; mode: SourceMode; items: Product[] } | null;
+let PRODUCTS_CACHE: CacheEntry = null;
+let LOAD_IN_FLIGHT: Promise<{ mode: SourceMode; items: Product[] }> | null = null;
+const getTtlMs = (): number => {
+  const v = Number(process.env.PRODUCTS_CACHE_TTL_MS || '120000'); // default 2 min
+  return Number.isFinite(v) && v > 0 ? v : 120000;
+};
+
 function slugify(s: string) {
   return (s || '')
     .toLowerCase()
@@ -183,13 +192,36 @@ function loadFromLocalJson(): { mode: SourceMode; items: Product[] } {
 }
 
 export async function loadAllProducts(): Promise<{ mode: SourceMode; items: Product[] }> {
-  // Priority: Sheets reader (supports CSV URL and Service Account) -> Local JSON -> Builtin
-  // Reason: readProductsFromSheet handles multi-agent columns, tabs and aliases better than the simple CSV mapper.
-  try {
-    const res = await loadFromSheets();
-    if (res.items && res.items.length > 0) return res;
-  } catch { /* fall through */ }
-  const local = loadFromLocalJson();
-  if (local.items && local.items.length > 0) return local;
-  return { mode: 'builtin', items: PRODUCTS };
+  const now = Date.now();
+  if (PRODUCTS_CACHE && now - PRODUCTS_CACHE.at < getTtlMs()) {
+    return { mode: PRODUCTS_CACHE.mode, items: PRODUCTS_CACHE.items };
+  }
+
+  if (LOAD_IN_FLIGHT) {
+    // Stampede-Schutz: parallel anfragende Requests warten auf dieselbe Ladung
+    return LOAD_IN_FLIGHT;
+  }
+
+  const actuallyLoad = async (): Promise<{ mode: SourceMode; items: Product[] }> => {
+    // Priority: Sheets reader (supports CSV URL and Service Account) -> Local JSON -> Builtin
+    // Reason: readProductsFromSheet handles multi-agent columns, tabs and aliases better than the simple CSV mapper.
+    try {
+      const res = await loadFromSheets();
+      if (res.items && res.items.length > 0) return res;
+    } catch { /* fall through */ }
+    const local = loadFromLocalJson();
+    if (local.items && local.items.length > 0) return local;
+    return { mode: 'builtin', items: PRODUCTS };
+  };
+
+  LOAD_IN_FLIGHT = actuallyLoad()
+    .then((res) => {
+      PRODUCTS_CACHE = { at: Date.now(), mode: res.mode, items: res.items };
+      return res;
+    })
+    .finally(() => {
+      LOAD_IN_FLIGHT = null;
+    });
+
+  return LOAD_IN_FLIGHT;
 }
