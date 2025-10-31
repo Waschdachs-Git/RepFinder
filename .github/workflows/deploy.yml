@@ -23,39 +23,12 @@ jobs:
         with:
           fetch-depth: 1
 
-      # Deploy using SSH KEY if provided
-      - name: Deploy over SSH (key)
-        if: ${{ secrets.SSH_KEY != '' }}
+      - name: Deploy over SSH (key or password)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          script_stop: true
-          command_timeout: 30m
-          script: |
-            set -Eeuo pipefail
-            BRANCH="${{ github.event.inputs.ref }}"; [ -z "$BRANCH" ] && BRANCH="main"
-            REPO_DIR=/var/www/html/RepFinder
-            APP_DIR="$REPO_DIR/web"
-            command -v pm2 >/dev/null || npm i -g pm2
-            if [ ! -d "$REPO_DIR/.git" ]; then
-              mkdir -p "$REPO_DIR"
-              git clone https://github.com/${{ github.repository }} "$REPO_DIR"
-            fi
-            cd "$REPO_DIR"
-            git fetch --all --prune
-            git reset --hard "origin/${BRANCH}"
-            cd "$APP_DIR"
-            bash scripts/deploy.sh
-
-      # Fallback: deploy using PASSWORD if no key provided
-      - name: Deploy over SSH (password)
-        if: ${{ secrets.SSH_KEY == '' && secrets.SSH_PASSWORD != '' }}
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           script_stop: true
           command_timeout: 30m
