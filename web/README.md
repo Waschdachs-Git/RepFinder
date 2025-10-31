@@ -71,12 +71,7 @@ Datenquellen-Optionen für Produkte (du kannst dein bestehendes Google Sheet wei
        - optional statt ENV: `key.b64` (Base64) im Repo-Root oder unter `web/key.b64`
      - Optional zur Tab-/Bereich-Steuerung deines bestehenden Sheets:
        - `GOOGLE_SHEETS_TAB` = Name der Registerkarte (z. B. `Produkte`)
-    - `GOOGLE_SHEETS_RANGE` = Zellenbereich (Default `A1:H100000`)
-    - `GOOGLE_SHEETS_TABS` = Kommaseparierte Liste von Tabs (wir mergen sie; erstes Tab liefert Header)
-    - `GOOGLE_SHEETS_IGNORE_TABS` = Tabs, die ignoriert werden (Komma)
-    - `SHEETS_IGNORE_PLACEHOLDER_LINKS=true|false` (Default true; ignoriert example/placeholder-Links)
-    - `PRODUCTS_CACHE_TTL_MS=120000` (In-Memory-Cache für Produkte, beschleunigt erste Kategorie-Aufrufe)
-  - `GOOGLE_SHEETS_GID=<number>` (wie CSV: nutze die numerische gid eines Tabs; wir lösen den Tab-Namen automatisch)
+       - `GOOGLE_SHEETS_RANGE` = Zellenbereich (Default `A1:H100000`)
    - In Google Sheets: das Dokument für die Service-Account-E-Mail „Betrachter“ freigeben.
    - Spalten (erste Zeile = Header): `name, agent, category, price, image, description, affiliateUrl, clicks, id(optional)`
    - Effekt: Die API lädt privat und live aus deinem Sheet.
@@ -84,7 +79,7 @@ Datenquellen-Optionen für Produkte (du kannst dein bestehendes Google Sheet wei
   - Multi-Tab support (one tab per main category)
     - If you maintain one tab per main category (e.g., Footwear, Tops, Bottoms, Outerwear, Full-Body-Clothing, Headwear, Accessories, Jewelry, Other Stuff), the loader can merge them automatically.
     - Control via env:
-      - `GOOGLE_SHEETS_TABS="Footwear,Tops,Bottoms,Outerwear,Full-Body-Clothing,Headwear,Accessories,Jewelry,Other Stuff"` explicitly sets which tabs to merge (first tab contributes headers; later tabs append rows without headers).
+  - `GOOGLE_SHEETS_TABS="Footwear,Tops,Bottoms,Outerwear,Full-Body-Clothing,Headwear,Accessories,Jewelry,Other Stuff"` explicitly sets which tabs to merge (first tab contributes headers; later tabs append rows without headers).
       - `GOOGLE_SHEETS_AUTO_TABS=true|false` toggles auto-detection of the standard tabs above; defaults to `true` when `GOOGLE_SHEETS_TABS` is not set.
       - `GOOGLE_SHEETS_RANGE` still applies to each tab (default `A1:ZZ100000`).
     - Ignore tabs with `GOOGLE_SHEETS_IGNORE_TABS` (comma-separated, substring match; e.g., `Test,Archive`).
