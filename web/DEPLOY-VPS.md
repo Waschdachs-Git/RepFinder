@@ -74,3 +74,5 @@ If you run behind Nginx/Apache, proxy incoming HTTPS traffic to the Node server 
 - Static export and PHP artifacts were removed. The app now always renders via Node.js.
 - Image optimization runs on the Node server (remotePatterns configured in `next.config.js`).
 - Clicks are aggregated in `.data-clicks.json` on the server. Ensure the app has write permissions in its working directory.
+
+< deploy trigger: 2025-10-31T18:41:51+01:00 -->
