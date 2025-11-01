@@ -321,7 +321,9 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
 
     // Multi-Agent Schema: getrennte Preis-/Affiliate-Spalten pro Agent, mehrere Agents pro Zelle
     if (hasMultiAgentPrices) {
-      const requireAff = String(process.env.SHEETS_REQUIRE_AFFILIATE || 'false').toLowerCase() === 'true';
+      // Neues Schema (kein 'agent' Feld mehr): Ein Produkt pro Agent NUR wenn ein Affiliate-Link vorhanden ist.
+      // Daher ist Affiliate verpflichtend.
+      const requireAff = true;
       const norm = (s: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       const headersNorm = header.map(norm);
       const findPriceCol = (agent: AgentKey) => {
@@ -363,19 +365,14 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
         return (['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'] as AgentKey[]).filter(a => uniq.includes(a));
       };
       let agents = parseAgents(agentsCell);
-      // Fallback: Wenn im Agent-Feld nichts steht, versuche automatisch
-      // Agenten aus befüllten Preis-/Affiliate-Spalten abzuleiten.
+      // Fallback/Standard: Agenten ausschließlich aus vorhandenen Affiliate-Spalten ableiten
+      // (Preis allein reicht nicht, da Affiliate die frühere 'agent'-Spalte ersetzt)
       if (!agents.length) {
-        const inferHasValue = (idx: number) => {
-          const v = String(idx >= 0 ? (row[idx] ?? '') : '').trim();
-          return v.length > 0;
-        };
+        const hasValue = (idx: number) => String(idx >= 0 ? (row[idx] ?? '') : '').trim().length > 0;
         (['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'] as AgentKey[]).forEach((ag) => {
-          const pIdx = priceIdx[ag];
           const aIdx = affIdx[ag];
-          if (inferHasValue(pIdx) || inferHasValue(aIdx)) agents.push(ag);
+          if (hasValue(aIdx)) agents.push(ag);
         });
-        // Deduplizieren
         agents = Array.from(new Set(agents));
       }
       if (!agents.length) continue; // mindestens ein Agent notwendig
