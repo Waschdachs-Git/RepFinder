@@ -358,23 +358,11 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
         mulebuy: findAffCol('mulebuy'),
         allchinabuy: findAffCol('allchinabuy'),
       };
-      const agentsCell = String(iAgent >= 0 ? (row[iAgent] ?? '') : '');
-      const parseAgents = (raw: string): AgentKey[] => {
-        const parts = raw.split(/[\n,;|\s]+/g).map((x) => x.trim().toLowerCase()).filter(Boolean);
-        const uniq = Array.from(new Set(parts));
-        return (['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'] as AgentKey[]).filter(a => uniq.includes(a));
-      };
-      let agents = parseAgents(agentsCell);
-      // Fallback/Standard: Agenten ausschließlich aus vorhandenen Affiliate-Spalten ableiten
+      // Standard: Agenten ausschließlich aus vorhandenen Affiliate-Spalten ableiten
       // (Preis allein reicht nicht, da Affiliate die frühere 'agent'-Spalte ersetzt)
-      if (!agents.length) {
-        const hasValue = (idx: number) => String(idx >= 0 ? (row[idx] ?? '') : '').trim().length > 0;
-        (['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'] as AgentKey[]).forEach((ag) => {
-          const aIdx = affIdx[ag];
-          if (hasValue(aIdx)) agents.push(ag);
-        });
-        agents = Array.from(new Set(agents));
-      }
+      const hasValue = (idx: number) => String(idx >= 0 ? (row[idx] ?? '') : '').trim().length > 0;
+      const agents = (['itaobuy','cnfans','superbuy','mulebuy','allchinabuy'] as AgentKey[])
+        .filter((ag) => hasValue(affIdx[ag]));
       if (!agents.length) continue; // mindestens ein Agent notwendig
 
       for (const agent of agents) {
