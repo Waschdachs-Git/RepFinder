@@ -13,6 +13,9 @@ export default function Pagination({ page, total, pageSize, onChange, loading }:
   const clamp = (p: number) => Math.min(pageCount, Math.max(1, p));
   const go = (p: number) => {
     if (loading) return;
+    // Fokus lösen, damit Browser nicht versucht, den Button im Viewport zu halten
+    try { (document.activeElement as HTMLElement | null)?.blur?.(); } catch {}
+    // Danach sanft nach oben scrollen
     try { window?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
     onChange(clamp(p));
   };

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Product } from '@/lib/types';
 import { addClick, formatProductPrice, isFavorite, toggleFavorite, getDisplayTitle, CARD_LEGAL_NOTE, AFFILIATE_DISCLAIMER } from '@/lib/utils';
 import ConsentImage from './ConsentImage';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // Re-use the same consent flags as ConsentImage to keep warnings in sync
 const IMG_CONSENT_KEY = 'pf:image-consent';
@@ -38,6 +38,15 @@ export default function ProductCard({ product }: { product: Product }) {
   const [ratio] = useState<number>(4 / 3);
   // Slideshow Index für mehrere Alt-Bilder
   const [altIdx, setAltIdx] = useState(0);
+  // Geräte-Fähigkeiten ermitteln
+  const supportsHover = useMemo(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    try { return window.matchMedia('(hover: hover) and (pointer: fine)').matches; } catch { return false; }
+  }, []);
+  const isTouch = useMemo(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    try { return window.matchMedia('(hover: none), (pointer: coarse)').matches; } catch { return false; }
+  }, []);
 
   useEffect(() => {
   if (product.id) setFav(isFavorite(product.id));
@@ -68,27 +77,35 @@ export default function ProductCard({ product }: { product: Product }) {
   
   // Ratio-Anpassung wird aktuell nicht mit ConsentImage ermittelt; optional nachrüstbar
 
-  // Hover-Slideshow: bei mehreren Alt-Bildern zyklisch wechseln
+  // Hover-Slideshow nur auf Hover-Geräten
   useEffect(() => {
-    if (altList.length < 2) return; // nur Slideshow wenn 2+ Bilder
-  let t: ReturnType<typeof setInterval> | undefined;
+    if (!supportsHover || altList.length < 2) return;
+    let t: ReturnType<typeof setInterval> | undefined;
     const node = document?.getElementById(`pc-${pid}`);
     if (!node) return;
-    const enter = () => {
+    const enter = (ev: Event) => {
+      // Nur Mauszeiger
+      // @ts-expect-error PointerEvent optional
+      if (ev && ev.pointerType && ev.pointerType !== 'mouse') return;
       if (t) clearInterval(t);
       let i = 0;
       t = setInterval(() => { i = (i + 1) % altList.length; setAltIdx(i); }, 900);
     };
-    const leave = () => { if (t) clearInterval(t); setAltIdx(0); };
-    node.addEventListener('mouseenter', enter);
-    node.addEventListener('mouseleave', leave);
+    const leave = (ev: Event) => {
+      // @ts-expect-error PointerEvent optional
+      if (ev && ev.pointerType && ev.pointerType !== 'mouse') return;
+      if (t) clearInterval(t);
+      setAltIdx(0);
+    };
+    node.addEventListener('pointerenter', enter as EventListener);
+    node.addEventListener('pointerleave', leave as EventListener);
     return () => {
-      node.removeEventListener('mouseenter', enter);
-      node.removeEventListener('mouseleave', leave);
+      node.removeEventListener('pointerenter', enter as EventListener);
+      node.removeEventListener('pointerleave', leave as EventListener);
       if (t) clearInterval(t);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pid, JSON.stringify(altList)]);
+  }, [pid, JSON.stringify(altList), supportsHover]);
 
   return (
   <div id={`pc-${pid}`} className="group rounded-2xl border border-neutral-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all overflow-hidden">
@@ -109,6 +126,19 @@ export default function ProductCard({ product }: { product: Product }) {
               ratio={ratio}
               imgClassName="transition-transform group-hover:scale-[1.01]"
             />
+            {isTouch && allImages.length > 1 && (
+              <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                {allImages.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    aria-label={`Bild ${i + 1}`}
+                    className={`h-2.5 w-2.5 rounded-full border ${i === Math.min(altIdx, allImages.length - 1) ? 'bg-[hsl(var(--accent))] border-[hsl(var(--accent))/60]' : 'bg-white/80 border-white/80'}`}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAltIdx(i); }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </Link>
         {/* Overlay removed: disclaimer now placed inside the card content */}
