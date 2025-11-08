@@ -292,7 +292,7 @@ export async function readProductsFromSheet(): Promise<SheetProduct[]> {
       const v = (val || '').toLowerCase().trim();
       const map: Record<string, string> = {
         'footwear': 'shoes', 'shoes': 'shoes',
-        'tops': 'tops',
+        'tops': 'tops', 'top': 'tops', 'tshirt': 'tops', 'tshirts': 'tops', 't-shirt': 'tops', 't-shirts': 'tops', 't shirts': 'tops', 'tees': 'tops', 'shirts': 'tops',
         'bottoms': 'bottoms',
         'outerwear': 'coats-and-jackets', 'coats & jackets': 'coats-and-jackets', 'coats and jackets': 'coats-and-jackets',
         'full-body-clothing': 'full-body-clothing', 'full_body_clothing': 'full-body-clothing', 'full body clothing': 'full-body-clothing',
