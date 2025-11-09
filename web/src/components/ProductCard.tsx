@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Product } from '@/lib/types';
 import { addClick, formatProductPrice, isFavorite, toggleFavorite, getDisplayTitle, CARD_LEGAL_NOTE, AFFILIATE_DISCLAIMER } from '@/lib/utils';
 import ConsentImage from './ConsentImage';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 // Re-use the same consent flags as ConsentImage to keep warnings in sync
 const IMG_CONSENT_KEY = 'pf:image-consent';
@@ -38,6 +38,8 @@ export default function ProductCard({ product }: { product: Product }) {
   const [ratio] = useState<number>(4 / 3);
   // Slideshow Index für mehrere Alt-Bilder
   const [altIdx, setAltIdx] = useState(0);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(false);
   // Geräte-Fähigkeiten ermitteln
   const supportsHover = useMemo(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
@@ -81,7 +83,7 @@ export default function ProductCard({ product }: { product: Product }) {
   useEffect(() => {
     if (!supportsHover || altList.length < 2) return;
     let t: ReturnType<typeof setInterval> | undefined;
-    const node = document?.getElementById(`pc-${pid}`);
+  const node = cardRef.current || document?.getElementById(`pc-${pid}`);
     if (!node) return;
     const enter = (ev: Event) => {
       // Nur Mauszeiger
@@ -107,8 +109,33 @@ export default function ProductCard({ product }: { product: Product }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pid, JSON.stringify(altList), supportsHover]);
 
+  // Sichtbarkeit via IntersectionObserver (für mobiles Auto-Swipe)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
+    const node = cardRef.current || document?.getElementById(`pc-${pid}`);
+    if (!node) return;
+    const obs = new IntersectionObserver((entries) => {
+      const e = entries[0];
+      setVisible(!!(e && e.isIntersecting && e.intersectionRatio > 0.5));
+    }, { threshold: [0, 0.5, 1] });
+    obs.observe(node);
+    return () => { try { obs.disconnect(); } catch {} };
+  }, [pid]);
+
+  // Mobiles Auto-Swipe: nur auf Touch-Geräten und wenn Karte sichtbar ist
+  useEffect(() => {
+    if (!isTouch) return;
+    if (!visible) return;
+    if (allImages.length <= 1) return;
+    let t: ReturnType<typeof setInterval> | undefined;
+    t = setInterval(() => {
+      setAltIdx((i) => (i + 1) % allImages.length);
+    }, 1800);
+    return () => { if (t) clearInterval(t); };
+  }, [isTouch, visible, allImages.length]);
+
   return (
-  <div id={`pc-${pid}`} className="group rounded-2xl border border-neutral-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all overflow-hidden">
+  <div ref={cardRef} id={`pc-${pid}`} className="group rounded-2xl border border-neutral-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all overflow-hidden">
       <div className="relative">
         <Link href={`/p/${pid}`} onClick={() => {
           // Klickzählung bleibt, aber wenn Bild noch gesperrt ist, verhindern wir versehentliche Navigation

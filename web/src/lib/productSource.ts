@@ -191,18 +191,8 @@ function loadFromLocalJson(): { mode: SourceMode; items: Product[] } {
   return { mode: 'builtin', items: PRODUCTS };
 }
 
-export async function loadAllProducts(): Promise<{ mode: SourceMode; items: Product[] }> {
-  const now = Date.now();
-  if (PRODUCTS_CACHE && now - PRODUCTS_CACHE.at < getTtlMs()) {
-    return { mode: PRODUCTS_CACHE.mode, items: PRODUCTS_CACHE.items };
-  }
-
-  if (LOAD_IN_FLIGHT) {
-    // Stampede-Schutz: parallel anfragende Requests warten auf dieselbe Ladung
-    return LOAD_IN_FLIGHT;
-  }
-
-  const actuallyLoad = async (): Promise<{ mode: SourceMode; items: Product[] }> => {
+// Hilfsfunktion extrahiert, damit sie vor Nutzung existiert
+async function actuallyLoad(): Promise<{ mode: SourceMode; items: Product[] }> {
     // Priority: Sheets reader (supports CSV URL and Service Account) -> Local JSON -> Builtin
     // Reason: readProductsFromSheet handles multi-agent columns, tabs and aliases better than the simple CSV mapper.
     try {
@@ -212,16 +202,32 @@ export async function loadAllProducts(): Promise<{ mode: SourceMode; items: Prod
     const local = loadFromLocalJson();
     if (local.items && local.items.length > 0) return local;
     return { mode: 'builtin', items: PRODUCTS };
-  };
+}
+
+export async function loadAllProducts(): Promise<{ mode: SourceMode; items: Product[] }> {
+  const now = Date.now();
+  const ttl = getTtlMs();
+
+  // Stale-while-revalidate: wenn Cache vorhanden, sofort liefern; bei Ablauf im Hintergrund aktualisieren
+  if (PRODUCTS_CACHE) {
+    const isFresh = now - PRODUCTS_CACHE.at < ttl;
+    if (!isFresh && !LOAD_IN_FLIGHT) {
+      // Trigger Hintergrund-Refresh ohne Aufrufer zu blockieren
+      LOAD_IN_FLIGHT = actuallyLoad()
+        .then((res) => { PRODUCTS_CACHE = { at: Date.now(), mode: res.mode, items: res.items }; return res; })
+        .finally(() => { LOAD_IN_FLIGHT = null; });
+    }
+    return { mode: PRODUCTS_CACHE.mode, items: PRODUCTS_CACHE.items };
+  }
+
+  if (LOAD_IN_FLIGHT) {
+    // Stampede-Schutz: parallel anfragende Requests warten auf dieselbe Ladung
+    return LOAD_IN_FLIGHT;
+  }
 
   LOAD_IN_FLIGHT = actuallyLoad()
-    .then((res) => {
-      PRODUCTS_CACHE = { at: Date.now(), mode: res.mode, items: res.items };
-      return res;
-    })
-    .finally(() => {
-      LOAD_IN_FLIGHT = null;
-    });
+    .then((res) => { PRODUCTS_CACHE = { at: Date.now(), mode: res.mode, items: res.items }; return res; })
+    .finally(() => { LOAD_IN_FLIGHT = null; });
 
   return LOAD_IN_FLIGHT;
 }
