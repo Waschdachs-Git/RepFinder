@@ -35,7 +35,19 @@ type HealthErr = {
   };
 };
 
+let HEALTH_CACHE: { at: number; body: any } | null = null;
+let HEALTH_IN_FLIGHT: Promise<Response> | null = null;
+
 export async function GET() {
+  const ttl = Number(process.env.HEALTH_TTL_MS || '60000'); // 60s default
+  const now = Date.now();
+  if (HEALTH_CACHE && now - HEALTH_CACHE.at < Math.max(5000, ttl)) {
+    return new Response(JSON.stringify(HEALTH_CACHE.body), {
+      status: 200,
+      headers: { 'content-type': 'application/json', 'x-health-cached': '1' },
+    });
+  }
+  if (HEALTH_IN_FLIGHT) return HEALTH_IN_FLIGHT;
   // Include build ID to verify which version is running on the server
   let buildId = '';
   try { buildId = fs.readFileSync(path.join(process.cwd(), '.next', 'BUILD_ID'), 'utf8').trim(); } catch {}
@@ -71,6 +83,7 @@ export async function GET() {
     return Response.json(res, { status: 200 });
   }
 
+  const doWork = async (): Promise<Response> => {
   try {
     // Determine effective mode similar to readSheet
     const forceMode = String(process.env.GOOGLE_SHEETS_MODE || '').trim().toLowerCase();
@@ -125,7 +138,9 @@ export async function GET() {
         sample,
       },
     };
-    return Response.json(ok, { status: 200 });
+    const res = Response.json(ok, { status: 200 });
+    try { HEALTH_CACHE = { at: Date.now(), body: ok }; } catch {}
+    return res;
   } catch (e: unknown) {
     const message =
       typeof e === 'object' && e && 'message' in e
@@ -138,6 +153,12 @@ export async function GET() {
         message,
       },
     };
-    return Response.json(res, { status: 200 });
+    const r = Response.json(res, { status: 200 });
+    try { HEALTH_CACHE = { at: Date.now(), body: res }; } catch {}
+    return r;
   }
+  };
+
+  HEALTH_IN_FLIGHT = doWork().finally(() => { HEALTH_IN_FLIGHT = null; });
+  return HEALTH_IN_FLIGHT;
 }
